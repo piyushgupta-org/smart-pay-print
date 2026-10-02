@@ -111,6 +111,7 @@ app.post('/upload', upload.single('document'), async (req, res) => {
             fs.unlinkSync(filePath); filePath = processedPhotoPath; req.file.filename = req.file.filename + '_converted.png';
         }
         const amountInPaise = totalCost * 100;
+
         res.send(`
             <html>
             <head>
@@ -178,4 +179,3 @@ app.post('/trigger-print', async (req, res) => {
 
 const PORT = 3000;
 server.listen(PORT, '0.0.0.0', () => { console.log('🚀 Server running on port ' + PORT); });
-
