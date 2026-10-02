@@ -19,7 +19,7 @@ if (!fs.existsSync(path.join(__dirname, 'uploads'))){
     fs.mkdirSync(path.join(__dirname, 'uploads'));
 }
 
-// ⚠️ यहाँ अपनी Razorpay से मिली असली KEY ID डालें
+// ⚠️ यहाँ अपनी असली चाबी पेस्ट करें:
 const RAZORPAY_KEY_ID = "rzp_test_Tj9FkSS0hnFIAk"; 
 
 const printers = {
@@ -28,7 +28,7 @@ const printers = {
     "PRINTER_03": { name: "Canteen Area Printer", location: "Canteen", pdfPrice: 5, photoPrice: 10 }
 };
 
-// 1. दुकानदार का लाइव डैशबोर्ड (सिंपल डिज़ाइन)
+// 1. दुकानदार का लाइव डैशबोर्ड
 app.get('/dashboard', (req, res) => {
     res.send(`
         <html>
@@ -64,6 +64,7 @@ app.get('/dashboard', (req, res) => {
         </html>
     `);
 });
+
 // 2. यूजर का पुराना होम पेज (Smart Pay-Per-Print Hub)
 app.get('/print', (req, res) => {
     const printerId = req.query.id || "PRINTER_01"; 
