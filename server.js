@@ -20,7 +20,7 @@ if (!fs.existsSync(path.join(__dirname, 'uploads'))){
 }
 
 // ⚠️ यहाँ अपनी Razorpay से मिली असली KEY ID डालें
-const RAZORPAY_KEY_ID = "rzp_test_YOUR_KEY_ID_HERE"; 
+const RAZORPAY_KEY_ID = "rzp_test_Tj9FkSS0hnFIAk"; 
 
 const printers = {
     "PRINTER_01": { name: "Library LaserJet", location: "First Floor", pdfPrice: 5, photoPrice: 10 },
