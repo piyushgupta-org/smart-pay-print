@@ -26,7 +26,7 @@ const printers = {
     "PRINTER_03": { name: "Canteen Kiosk Printer", location: "Cafeteria Zone", pdfPrice: 5, photoPrice: 10 }
 };
 
-// 1. दुकानदार का प्रीमियम डार्क-लाइट डैशबोर्ड Panel
+// 1. दुकानदार का प्रीमियम लाइव डैशबोर्ड
 app.get('/dashboard', (req, res) => {
     res.send(`
         <html>
@@ -34,22 +34,24 @@ app.get('/dashboard', (req, res) => {
             <title>Merchant Live Monitor</title>
             <script src="/socket.io/socket.io.js"></script>
             <style>
-                body { font-family: 'Segoe UI', Arial, sans-serif; background-color: #0b0f19; color: #ffffff; padding: 40px; margin: 0; }
-                .card { background: #131a2c; max-width: 600px; margin: auto; padding: 35px; border-radius: 16px; box-shadow: 0px 10px 30px rgba(124, 58, 237, 0.2); border: 1px solid #3b4252; }
-                h2 { color: #ffffff; margin: 0 0 5px 0; display: flex; justify-content: space-between; align-items: center; font-size: 26px; }
-                .status-badge { font-size: 12px; background: #a78bfa; color: #0b0f19; padding: 6px 14px; border-radius: 20px; font-weight: bold; uppercase; tracking-wider; }
+                body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: #0b0f19; color: #ffffff; padding: 40px; margin: 0; }
+                .card { background: #131a2c; max-width: 600px; margin: auto; padding: 35px; border-radius: 16px; box-shadow: 0px 10px 30px rgba(124, 58, 237, 0.2); border: 1px solid #1e293b; animation: fadeIn 0.4s ease-out; }
+                h2 { color: #ffffff; margin: 0 0 5px 0; display: flex; justify-content: space-between; align-items: center; font-size: 24px; font-weight: 700; }
+                .status-badge { font-size: 11px; background: #a78bfa; color: #0b0f19; padding: 5px 12px; border-radius: 20px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
                 hr { border: 0; border-top: 1px solid #1e293b; margin: 25px 0; }
-                .job-item { background: #ffffff; color: #0f172a; padding: 16px; margin: 12px 0; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border-left: 6px solid #7c3aed; transition: 0.2s; }
+                .job-item { background: #ffffff; color: #0f172a; padding: 16px; margin: 12px 0; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 6px rgba(0,0,0,0.03); border-left: 5px solid #7c3aed; transition: transform 0.2s ease; animation: slideUp 0.3s ease-out; }
                 .job-item:hover { transform: translateY(-2px); }
-                .job-price { color: #7c3aed; font-weight: 800; font-size: 20px; }
+                .job-price { color: #7c3aed; font-weight: 700; font-size: 18px; }
+                @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+                @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
             </style>
         </head>
         <body>
             <div class="card">
-                <h2>🖨️ Kiosk Print Monitor <span class="status-badge">● System Online</span></h2>
-                <p style="color: #94a3b8; font-size: 14px; margin: 0;">Real-time Cloud Node Spooler</p>
+                <h2>🖨️ Kiosk Print Monitor <span class="status-badge">● Online</span></h2>
+                <p style="color: #94a3b8; font-size: 13px; margin: 0;">Real-time Cloud Node Spooler</p>
                 <hr>
-                <h3 style="color: #a78bfa; font-size: 16px; tracking-wide;">Active Queue Stream:</h3>
+                <h3 style="color: #a78bfa; font-size: 15px; font-weight: 600;">Active Queue Stream:</h3>
                 <ul id="print-list" style="list-style-type: none; padding: 0;">
                     <li id="no-jobs" style="color: #64748b; font-style: italic; text-align: center; padding: 40px;">Waiting for verified user bank payments...</li>
                 </ul>
@@ -62,7 +64,7 @@ app.get('/dashboard', (req, res) => {
                     const list = document.getElementById('print-list');
                     const item = document.createElement('li');
                     item.className = "job-item";
-                    item.innerHTML = '<div><b style="font-size:15px;">' + data.printerName + '</b><br><span style="color:#64748b; font-size:12px; font-weight:600;">Format: ' + data.format + '</span></div><div class="job-price">₹' + data.cost + '</div>';
+                    item.innerHTML = '<div><b style="font-size:14px; font-weight:600;">' + data.printerName + '</b><br><span style="color:#64748b; font-size:12px;">Format: ' + data.format + '</span></div><div class="job-price">₹' + data.cost + '</div>';
                     list.prepend(item);
                     const audio = new AudioContext(); const osc = audio.createOscillator();
                     osc.connect(audio.destination); osc.start(); osc.stop(audio.currentTime + 0.15);
@@ -83,15 +85,16 @@ app.get('/print', (req, res) => {
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <title>Smart Pay-Per-Print Hub</title>
             <style>
-                body { font-family: 'Segoe UI', Arial, sans-serif; background-color: #0b0f19; display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; margin: 0; }
-                .card { background: #131a2c; max-width: 400px; width: 100%; padding: 35px; border-radius: 24px; box-shadow: 0px 15px 35px rgba(124, 58, 237, 0.2); border: 1px solid #1e293b; text-align: center; border-top: 6px solid #7c3aed; }
-                h2 { color: #ffffff; margin: 0 0 6px 0; font-size: 24px; font-weight: 800; }
-                .loc-tag { font-size: 13px; color: #a78bfa; font-weight: 600; margin-bottom: 20px; display: inline-block; background: rgba(124, 58, 237, 0.1); padding: 4px 14px; border-radius: 20px; }
-                .rates-box { background: #ffffff; padding: 14px; border-radius: 16px; font-size: 13px; display: flex; justify-content: space-around; color: #0f172a; margin: 20px 0; box-shadow: 0 4px 10px rgba(0,0,0,0.05); font-weight: 600; }
-                .file-custom { border: 2px dashed #475569; padding: 35px 20px; border-radius: 16px; background: rgba(255,255,255,0.02); cursor: pointer; display: block; margin-bottom: 25px; transition: 0.2s; }
-                .file-custom:hover { border-color: #7c3aed; background: rgba(124, 58, 237, 0.05); }
-                .upload-btn { width: 100%; background: #ffffff; color: #0b0f19; border: none; padding: 15px; font-size: 15px; font-weight: 800; border-radius: 14px; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 12px rgba(255,255,255,0.1); text-transform: uppercase; letter-spacing: 0.5px; }
-                .upload-btn:hover { background: #a78bfa; color: #0b0f19; transform: translateY(-1px); }
+                body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: #0b0f19; display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; margin: 0; }
+                .card { background: #131a2c; max-width: 400px; width: 100%; padding: 35px; border-radius: 20px; box-shadow: 0px 15px 35px rgba(124, 58, 237, 0.2); border: 1px solid #1e293b; text-align: center; border-top: 5px solid #7c3aed; animation: fadeIn 0.4s ease-out; }
+                h2 { color: #ffffff; margin: 0 0 6px 0; font-size: 22px; font-weight: 700; }
+                .loc-tag { font-size: 12px; color: #a78bfa; font-weight: 600; margin-bottom: 20px; display: inline-block; background: rgba(124, 58, 237, 0.1); padding: 4px 14px; border-radius: 20px; }
+                .rates-box { background: #ffffff; padding: 14px; border-radius: 14px; font-size: 13px; display: flex; justify-content: space-around; color: #0f172a; margin: 20px 0; box-shadow: 0 4px 10px rgba(0,0,0,0.03); font-weight: 600; }
+                .file-custom { border: 2px dashed #475569; padding: 35px 20px; border-radius: 14px; background: rgba(255,255,255,0.01); cursor: pointer; display: block; margin-bottom: 25px; transition: all 0.2s ease; }
+                .file-custom:hover { border-color: #7c3aed; background: rgba(124, 58, 237, 0.04); transform: scale(1.01); }
+                .upload-btn { width: 100%; background: #ffffff; color: #0b0f19; border: none; padding: 14px; font-size: 14px; font-weight: 700; border-radius: 12px; cursor: pointer; transition: all 0.2s ease; box-shadow: 0 4px 12px rgba(255,255,255,0.05); text-transform: uppercase; tracking-wide: 0.5px; }
+                .upload-btn:hover { background: #a78bfa; transform: translateY(-1px); }
+                @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
             </style>
         </head>
         <body>
@@ -107,7 +110,7 @@ app.get('/print', (req, res) => {
                 <form action="/upload?id=${printerId}" method="POST" enctype="multipart/form-data">
                     <label class="file-custom">
                         <input type="file" name="document" accept="application/pdf, image/*" required style="display:none;" id="file-in"/>
-                        <span style="font-size:32px; display:block;">📂</span>
+                        <span style="font-size:30px; display:block;">📂</span>
                         <span style="display:block; font-size:13px; font-weight:600; margin-top:10px; color:#94a3b8;" id="file-lbl">Tap to Select Document</span>
                     </label>
                     <button type="submit" class="upload-btn">Process Invoice</button>
@@ -116,7 +119,7 @@ app.get('/print', (req, res) => {
             <script>
                 document.getElementById('file-in').addEventListener('change', function(e) {
                     document.getElementById('file-lbl').innerText = e.target.files.name;
-                    document.getElementById('file-lbl').style.color = '#ffffff';
+                    document.getElementById('file-lbl').style.color = '#a78bfa';
                 });
             </script>
         </body>
@@ -124,7 +127,7 @@ app.get('/print', (req, res) => {
     `);
 });
 
-// 3. ग्राहक का इनवॉइस पेमेंट पेज (शुरुआती भाग)
+// 3. ग्राहक का इनवॉइस पेमेंट पेज
 app.post('/upload', upload.single('document'), async (req, res) => {
     let filePath = "";
     try {
@@ -154,27 +157,28 @@ app.post('/upload', upload.single('document'), async (req, res) => {
                 <title>Secure Checkout</title>
                 <script src="https://razorpay.com"></script>
                 <style>
-                    body { font-family: 'Segoe UI', Arial, sans-serif; background-color: #0b0f19; display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; margin: 0; }
-                    .card { background: #131a2c; max-width: 400px; width: 100%; padding: 35px; border-radius: 24px; box-shadow: 0px 15px 35px rgba(124, 58, 237, 0.2); border: 1px solid #1e293b; text-align: center; }
-                    .invoice-box { background: #ffffff; border: 1px solid #e2e8f0; padding: 18px; border-radius: 16px; text-align: left; font-size: 14px; margin: 25px 0; box-shadow: 0 4px 6px rgba(0,0,0,0.02); color: #0f172a; }
+                    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: #0b0f19; display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; margin: 0; }
+                    .card { background: #131a2c; max-width: 400px; width: 100%; padding: 35px; border-radius: 20px; box-shadow: 0px 15px 35px rgba(124, 58, 237, 0.2); border: 1px solid #1e293b; text-align: center; animation: fadeIn 0.3s ease-out; }
+                    .invoice-box { background: #ffffff; border: 1px solid #e2e8f0; padding: 18px; border-radius: 14px; text-align: left; font-size: 13px; margin: 25px 0; box-shadow: 0 4px 6px rgba(0,0,0,0.02); color: #0f172a; }
                     .row { display: flex; justify-content: space-between; margin: 8px 0; font-weight: 500; }
-                    .pay-btn { width: 100%; background: #a78bfa; color: #0b0f19; border: none; padding: 15px; font-size: 15px; font-weight: 800; border-radius: 14px; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 12px rgba(167,139,250,0.3); text-transform: uppercase; }
-                    .pay-btn:hover { background: #ffffff; }
+                    .pay-btn { width: 100%; background: #a78bfa; color: #0b0f19; border: none; padding: 14px; font-size: 14px; font-weight: 700; border-radius: 12px; cursor: pointer; transition: all 0.2s ease; box-shadow: 0 4px 12px rgba(167,139,250,0.2); text-transform: uppercase; }
+                    .pay-btn:hover { background: #ffffff; transform: translateY(-1px); }
+                    @keyframes fadeIn { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
                 </style>
             </head>
             <body>
                 <div class="card">
-                    <h3 style="margin:0; color:#ffffff; font-size:22px; font-weight:800;">Checkout Invoice</h3>
+                    <h3 style="margin:0; color:#ffffff; font-size:20px; font-weight:700;">Checkout Invoice</h3>
                     <p style="margin:5px 0 0 0; font-size:12px; color:#94a3b8;">Transaction Node Initialized</p>
                     <div class="invoice-box">
                         <div class="row"><span>File Format:</span><b>${displayType}</b></div>
                         <div class="row"><span>Total Pages:</span><b>${totalPages}</b></div>
                         <div style="border-top: 1px dashed #cbd5e1; margin: 12px 0;"></div>
-                        <div class="row" style="font-size:16px; font-weight: 800;"><span>Grand Total:</span><span style="color:#7c3aed;">₹${totalCost}</span></div>
+                        <div class="row" style="font-size:15px; font-weight: 700;"><span>Grand Total:</span><span style="color:#7c3aed;">₹${totalCost}</span></div>
                     </div>
                     <button id="rzp-button" class="pay-btn">Pay via UPI / Card 💳</button>
                     <br><br>
-                    <a href="/print?id=${printerId}" style="color: #ef4444; font-size: 13px; text-decoration: none; font-weight: 700;">Cancel Order</a>
+                    <a href="/print?id=${printerId}" style="color: #ef4444; font-size: 13px; text-decoration: none; font-weight: 600;">Cancel Order</a>
                 </div>
                 <script>
                     var options = {
@@ -214,11 +218,20 @@ app.post('/trigger-print', async (req, res) => {
         await ptp.print(filePath); fs.unlinkSync(filePath);
         res.send(`
             <html>
-            <body style="font-family: 'Segoe UI', Arial, sans-serif; background-color: #0b0f19; display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; margin: 0;">
-                <div style="background: #131a2c; max-width: 400px; padding: 40px; border-radius: 24px; box-shadow: 0 10px 30px rgba(124, 58, 237, 0.1); border: 1px solid #1e293b; text-align: center;">
-                    <span style="font-size: 55px; display:block; mb-4;">🖨️🎉</span>
-                    <h2 style="color: #ffffff; font-weight:800; font-size:24px; margin-top:15px;">Printing Started!</h2>
-                    <p style="color: #94a3b8; font-size: 14px; line-height: 1.6; margin-top:10px;">Your transaction has been settled. Please collect your sheets from the printer output tray.</p>
+            <head>
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>Success</title>
+                <style>
+                    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: #0b0f19; display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; margin: 0; }
+                    .card { background: #131a2c; max-width: 400px; padding: 40px; border-radius: 20px; box-shadow: 0 10px 30px rgba(124, 58, 237, 0.1); border: 1px solid #1e293b; text-align: center; animation: pop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+                    @keyframes pop { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+                </style>
+            </head>
+            <body>
+                <div class="card">
+                    <span style="font-size: 50px; display:block; margin-bottom:15px;">🖨️🎉</span>
+                    <h2 style="color: #ffffff; font-weight:700; font-size:22px; margin:0;">Printing Started!</h2>
+                    <p style="color: #94a3b8; font-size: 14px; line-height: 1.5; margin-top: 10px;">Your transaction has been settled. Please collect your sheets from the printer output tray.</p>
                 </div>
             </body>
             </html>
