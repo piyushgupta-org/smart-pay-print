@@ -25,21 +25,20 @@ const printers = {
     "PRINTER_02": { name: "Tech Lab Color Printer", location: "Lab 3, Ground Floor", pdfPrice: 8, photoPrice: 15 },
     "PRINTER_03": { name: "Canteen Kiosk Printer", location: "Cafeteria Zone", pdfPrice: 5, photoPrice: 10 }
 };
-
-// 1. दुकानदार का प्रीमियम लाइव डैशबोर्ड
+// 1. दुकानदार का प्रीमियम लाइव लाइट डैशबोर्ड
 app.get('/dashboard', (req, res) => {
     res.send(`
         <html>
         <head>
-            <title>Merchant Live Monitor</title>
+            <title>Merchant Live Monitor | Smart Pay-Per-Print Hub</title>
             <script src="/socket.io/socket.io.js"></script>
             <style>
-                body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: #0b0f19; color: #ffffff; padding: 40px; margin: 0; }
-                .card { background: #131a2c; max-width: 600px; margin: auto; padding: 35px; border-radius: 16px; box-shadow: 0px 10px 30px rgba(124, 58, 237, 0.2); border: 1px solid #1e293b; animation: fadeIn 0.4s ease-out; }
-                h2 { color: #ffffff; margin: 0 0 5px 0; display: flex; justify-content: space-between; align-items: center; font-size: 24px; font-weight: 700; }
-                .status-badge { font-size: 11px; background: #a78bfa; color: #0b0f19; padding: 5px 12px; border-radius: 20px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
-                hr { border: 0; border-top: 1px solid #1e293b; margin: 25px 0; }
-                .job-item { background: #ffffff; color: #0f172a; padding: 16px; margin: 12px 0; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 6px rgba(0,0,0,0.03); border-left: 5px solid #7c3aed; transition: transform 0.2s ease; animation: slideUp 0.3s ease-out; }
+                body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: #f8fafc; color: #1e293b; padding: 40px; margin: 0; display: flex; align-items: center; justify-content: center; min-height: 90vh; }
+                .card { background: #ffffff; max-width: 600px; width: 100%; padding: 35px; border-radius: 20px; box-shadow: 0px 10px 40px rgba(124, 58, 237, 0.08); border: 1px solid #e2e8f0; border-top: 5px solid #7c3aed; animation: fadeIn 0.4s ease-out; }
+                h2 { color: #0f172a; margin: 0 0 5px 0; display: flex; justify-content: space-between; align-items: center; font-size: 24px; font-weight: 700; }
+                .status-badge { font-size: 11px; background: #f3e8ff; color: #7c3aed; padding: 5px 14px; border-radius: 20px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; border: 1px solid #e9d5ff; }
+                hr { border: 0; border-top: 1px solid #e2e8f0; margin: 25px 0; }
+                .job-item { background: #f8fafc; color: #0f172a; padding: 16px; margin: 12px 0; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.02); border-left: 5px solid #7c3aed; transition: transform 0.2s ease; border-top: 1px solid #edf2f7; border-right: 1px solid #edf2f7; border-bottom: 1px solid #edf2f7; animation: slideUp 0.3s ease-out; }
                 .job-item:hover { transform: translateY(-2px); }
                 .job-price { color: #7c3aed; font-weight: 700; font-size: 18px; }
                 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
@@ -48,12 +47,12 @@ app.get('/dashboard', (req, res) => {
         </head>
         <body>
             <div class="card">
-                <h2>🖨️ Kiosk Print Monitor <span class="status-badge">● Online</span></h2>
-                <p style="color: #94a3b8; font-size: 13px; margin: 0;">Real-time Cloud Node Spooler</p>
+                <h2>🖨️ Live Print Monitor <span class="status-badge">● Online</span></h2>
+                <p style="color: #64748b; font-size: 13px; margin: 0;">Smart Pay-Per-Print Hub — Real-time Node Status</p>
                 <hr>
-                <h3 style="color: #a78bfa; font-size: 15px; font-weight: 600;">Active Queue Stream:</h3>
-                <ul id="print-list" style="list-style-type: none; padding: 0;">
-                    <li id="no-jobs" style="color: #64748b; font-style: italic; text-align: center; padding: 40px;">Waiting for verified user bank payments...</li>
+                <h3 style="color: #7c3aed; font-size: 15px; font-weight: 600; margin-bottom: 15px;">Active Queue Stream:</h3>
+                <ul id="print-list" style="list-style-type: none; padding: 0; margin: 0;">
+                    <li id="no-jobs" style="color: #94a3b8; font-style: italic; text-align: center; padding: 40px; font-size: 14px;">Waiting for verified user payments...</li>
                 </ul>
             </div>
             <script>
@@ -64,7 +63,7 @@ app.get('/dashboard', (req, res) => {
                     const list = document.getElementById('print-list');
                     const item = document.createElement('li');
                     item.className = "job-item";
-                    item.innerHTML = '<div><b style="font-size:14px; font-weight:600;">' + data.printerName + '</b><br><span style="color:#64748b; font-size:12px;">Format: ' + data.format + '</span></div><div class="job-price">₹' + data.cost + '</div>';
+                    item.innerHTML = '<div><b style="font-size:14px; font-weight:600; color:#0f172a;">' + data.printerName + '</b><br><span style="color:#64748b; font-size:12px;">Format: ' + data.format + '</span></div><div class="job-price">₹' + data.cost + '</div>';
                     list.prepend(item);
                     const audio = new AudioContext(); const osc = audio.createOscillator();
                     osc.connect(audio.destination); osc.start(); osc.stop(audio.currentTime + 0.15);
@@ -74,7 +73,8 @@ app.get('/dashboard', (req, res) => {
         </html>
     `);
 });
-// 2. ग्राहक का नया और आकर्षक मोबाइल अपलोड पेज (Smart Pay-Per-Print Hub)
+
+// 2. ग्राहक का आकर्षक मोबाइल लाइट अपलोड पेज
 app.get('/print', (req, res) => {
     const printerId = req.query.id || "PRINTER_01"; 
     const activePrinter = printers[printerId] || printers["PRINTER_01"];
@@ -85,15 +85,15 @@ app.get('/print', (req, res) => {
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <title>Smart Pay-Per-Print Hub</title>
             <style>
-                body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: #0b0f19; display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; margin: 0; }
-                .card { background: #131a2c; max-width: 400px; width: 100%; padding: 35px; border-radius: 20px; box-shadow: 0px 15px 35px rgba(124, 58, 237, 0.2); border: 1px solid #1e293b; text-align: center; border-top: 5px solid #7c3aed; animation: fadeIn 0.4s ease-out; }
-                h2 { color: #ffffff; margin: 0 0 6px 0; font-size: 22px; font-weight: 700; }
-                .loc-tag { font-size: 12px; color: #a78bfa; font-weight: 600; margin-bottom: 20px; display: inline-block; background: rgba(124, 58, 237, 0.1); padding: 4px 14px; border-radius: 20px; }
-                .rates-box { background: #ffffff; padding: 14px; border-radius: 14px; font-size: 13px; display: flex; justify-content: space-around; color: #0f172a; margin: 20px 0; box-shadow: 0 4px 10px rgba(0,0,0,0.03); font-weight: 600; }
-                .file-custom { border: 2px dashed #475569; padding: 35px 20px; border-radius: 14px; background: rgba(255,255,255,0.01); cursor: pointer; display: block; margin-bottom: 25px; transition: all 0.2s ease; }
-                .file-custom:hover { border-color: #7c3aed; background: rgba(124, 58, 237, 0.04); transform: scale(1.01); }
-                .upload-btn { width: 100%; background: #ffffff; color: #0b0f19; border: none; padding: 14px; font-size: 14px; font-weight: 700; border-radius: 12px; cursor: pointer; transition: all 0.2s ease; box-shadow: 0 4px 12px rgba(255,255,255,0.05); text-transform: uppercase; tracking-wide: 0.5px; }
-                .upload-btn:hover { background: #a78bfa; transform: translateY(-1px); }
+                body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: #f8fafc; display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; margin: 0; }
+                .card { background: #ffffff; max-width: 400px; width: 100%; padding: 35px; border-radius: 20px; box-shadow: 0px 15px 40px rgba(124, 58, 237, 0.06); border: 1px solid #e2e8f0; text-align: center; border-top: 5px solid #7c3aed; animation: fadeIn 0.4s ease-out; }
+                h2 { color: #0f172a; margin: 0 0 6px 0; font-size: 22px; font-weight: 700; }
+                .loc-tag { font-size: 12px; color: #7c3aed; font-weight: 600; margin-bottom: 20px; display: inline-block; background: #f3e8ff; padding: 4px 14px; border-radius: 20px; border: 1px solid #e9d5ff; }
+                .rates-box { background: #f8fafc; padding: 14px; border-radius: 14px; font-size: 13px; display: flex; justify-content: space-around; color: #334155; margin: 20px 0; box-shadow: inset 0 2px 4px rgba(0,0,0,0.01); font-weight: 600; border: 1px solid #edf2f7; }
+                .file-custom { border: 2px dashed #cbd5e1; padding: 35px 20px; border-radius: 14px; background: #f8fafc; cursor: pointer; display: block; margin-bottom: 25px; transition: all 0.2s ease; }
+                .file-custom:hover { border-color: #7c3aed; background: #f5f3ff; transform: scale(1.01); }
+                .upload-btn { width: 100%; background: #7c3aed; color: #ffffff; border: none; padding: 14px; font-size: 14px; font-weight: 700; border-radius: 12px; cursor: pointer; transition: all 0.2s ease; box-shadow: 0 4px 12px rgba(124, 58, 237, 0.25); text-transform: uppercase; letter-spacing: 0.5px; }
+                .upload-btn:hover { background: #6d28d9; transform: translateY(-1px); }
                 @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
             </style>
         </head>
@@ -101,7 +101,7 @@ app.get('/print', (req, res) => {
             <div class="card">
                 <h2>Smart Pay-Per-Print Hub 🖨️</h2>
                 <div class="loc-tag">📍 ${activePrinter.location}</div>
-                <p style="font-size:12px; color:#94a3b8; margin:0 0 15px 0;">Device: <b>${activePrinter.name}</b></p>
+                <p style="font-size:12px; color:#64748b; margin:0 0 15px 0;">Device: <b>${activePrinter.name}</b></p>
                 <div class="rates-box">
                     <div>📄 PDF: <span style="color:#7c3aed;"><b>₹${activePrinter.pdfPrice}/pg</b></span></div>
                     <div style="width: 1px; background: #e2e8f0;"></div>
@@ -111,23 +111,24 @@ app.get('/print', (req, res) => {
                     <label class="file-custom">
                         <input type="file" name="document" accept="application/pdf, image/*" required style="display:none;" id="file-in"/>
                         <span style="font-size:30px; display:block;">📂</span>
-                        <span style="display:block; font-size:13px; font-weight:600; margin-top:10px; color:#94a3b8;" id="file-lbl">Tap to Select Document</span>
+                        <span style="display:block; font-size:13px; font-weight:600; margin-top:10px; color:#64748b;" id="file-lbl">Tap to Select Document</span>
                     </label>
                     <button type="submit" class="upload-btn">Process Invoice</button>
                 </form>
             </div>
             <script>
                 document.getElementById('file-in').addEventListener('change', function(e) {
-                    document.getElementById('file-lbl').innerText = e.target.files.name;
-                    document.getElementById('file-lbl').style.color = '#a78bfa';
+                    if(e.target.files.length > 0) {
+                        document.getElementById('file-lbl').innerText = e.target.files[0].name;
+                        document.getElementById('file-lbl').style.color = '#7c3aed';
+                    }
                 });
             </script>
         </body>
         </html>
     `);
 });
-
-// 3. ग्राहक का इनवॉइस पेमेंट पेज
+// 3. ग्राहक का लाइट इनवॉइस पेमेंट पेज
 app.post('/upload', upload.single('document'), async (req, res) => {
     let filePath = "";
     try {
@@ -154,25 +155,25 @@ app.post('/upload', upload.single('document'), async (req, res) => {
             <html>
             <head>
                 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                <title>Secure Checkout</title>
+                <title>Secure Checkout | Smart Pay-Per-Print Hub</title>
                 <script src="https://razorpay.com"></script>
                 <style>
-                    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: #0b0f19; display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; margin: 0; }
-                    .card { background: #131a2c; max-width: 400px; width: 100%; padding: 35px; border-radius: 20px; box-shadow: 0px 15px 35px rgba(124, 58, 237, 0.2); border: 1px solid #1e293b; text-align: center; animation: fadeIn 0.3s ease-out; }
-                    .invoice-box { background: #ffffff; border: 1px solid #e2e8f0; padding: 18px; border-radius: 14px; text-align: left; font-size: 13px; margin: 25px 0; box-shadow: 0 4px 6px rgba(0,0,0,0.02); color: #0f172a; }
+                    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: #f8fafc; display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; margin: 0; }
+                    .card { background: #ffffff; max-width: 400px; width: 100%; padding: 35px; border-radius: 20px; box-shadow: 0px 15px 40px rgba(124, 58, 237, 0.06); border: 1px solid #e2e8f0; text-align: center; animation: fadeIn 0.3s ease-out; }
+                    .invoice-box { background: #f8fafc; border: 1px solid #e2e8f0; padding: 18px; border-radius: 14px; text-align: left; font-size: 13px; margin: 25px 0; box-shadow: inset 0 2px 4px rgba(0,0,0,0.01); color: #334155; }
                     .row { display: flex; justify-content: space-between; margin: 8px 0; font-weight: 500; }
-                    .pay-btn { width: 100%; background: #a78bfa; color: #0b0f19; border: none; padding: 14px; font-size: 14px; font-weight: 700; border-radius: 12px; cursor: pointer; transition: all 0.2s ease; box-shadow: 0 4px 12px rgba(167,139,250,0.2); text-transform: uppercase; }
-                    .pay-btn:hover { background: #ffffff; transform: translateY(-1px); }
+                    .pay-btn { width: 100%; background: #7c3aed; color: #ffffff; border: none; padding: 14px; font-size: 14px; font-weight: 700; border-radius: 12px; cursor: pointer; transition: all 0.2s ease; box-shadow: 0 4px 12px rgba(124, 58, 237, 0.25); text-transform: uppercase; letter-spacing: 0.5px; }
+                    .pay-btn:hover { background: #6d28d9; transform: translateY(-1px); }
                     @keyframes fadeIn { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
                 </style>
             </head>
             <body>
                 <div class="card">
-                    <h3 style="margin:0; color:#ffffff; font-size:20px; font-weight:700;">Checkout Invoice</h3>
-                    <p style="margin:5px 0 0 0; font-size:12px; color:#94a3b8;">Transaction Node Initialized</p>
+                    <h3 style="margin:0; color:#0f172a; font-size:20px; font-weight:700;">Checkout Invoice</h3>
+                    <p style="margin:5px 0 0 0; font-size:12px; color:#64748b;">Smart Pay-Per-Print Secure Gateway</p>
                     <div class="invoice-box">
-                        <div class="row"><span>File Format:</span><b>${displayType}</b></div>
-                        <div class="row"><span>Total Pages:</span><b>${totalPages}</b></div>
+                        <div class="row"><span>File Format:</span><b style="color:#0f172a;">${displayType}</b></div>
+                        <div class="row"><span>Total Pages:</span><b style="color:#0f172a;">${totalPages}</b></div>
                         <div style="border-top: 1px dashed #cbd5e1; margin: 12px 0;"></div>
                         <div class="row" style="font-size:15px; font-weight: 700;"><span>Grand Total:</span><span style="color:#7c3aed;">₹${totalCost}</span></div>
                     </div>
@@ -182,8 +183,8 @@ app.post('/upload', upload.single('document'), async (req, res) => {
                 </div>
                 <script>
                     var options = {
-                        "key": "${RAZORPAY_KEY_ID}", "amount": "${amountInPaise}", "currency": "INR", "name": "Instaprint Network",
-                        "description": "Real-Time Print Automation Node",
+                        "key": "${RAZORPAY_KEY_ID}", "amount": "${amountInPaise}", "currency": "INR", "name": "Smart Pay-Per-Print Hub",
+                        "description": "Real-Time Cloud Print Node",
                         "handler": function (response){
                             var form = document.createElement('form'); form.method = 'POST'; form.action = '/trigger-print';
                             var inputs = { 'fileName': '${req.file.filename}', 'printerId': '${printerId}', 'format': '${fileType}', 'cost': '${totalCost}' };
@@ -220,18 +221,18 @@ app.post('/trigger-print', async (req, res) => {
             <html>
             <head>
                 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                <title>Success</title>
+                <title>Success | Smart Pay-Per-Print Hub</title>
                 <style>
-                    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: #0b0f19; display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; margin: 0; }
-                    .card { background: #131a2c; max-width: 400px; padding: 40px; border-radius: 20px; box-shadow: 0 10px 30px rgba(124, 58, 237, 0.1); border: 1px solid #1e293b; text-align: center; animation: pop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+                    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: #f8fafc; display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; margin: 0; }
+                    .card { background: #ffffff; max-width: 400px; padding: 40px; border-radius: 20px; box-shadow: 0 15px 40px rgba(124, 58, 237, 0.06); border: 1px solid #e2e8f0; text-align: center; border-top: 5px solid #22c55e; animation: pop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
                     @keyframes pop { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
                 </style>
             </head>
             <body>
                 <div class="card">
                     <span style="font-size: 50px; display:block; margin-bottom:15px;">🖨️🎉</span>
-                    <h2 style="color: #ffffff; font-weight:700; font-size:22px; margin:0;">Printing Started!</h2>
-                    <p style="color: #94a3b8; font-size: 14px; line-height: 1.5; margin-top: 10px;">Your transaction has been settled. Please collect your sheets from the printer output tray.</p>
+                    <h2 style="color: #0f172a; font-weight:700; font-size:22px; margin:0;">Printing Started!</h2>
+                    <p style="color: #64748b; font-size: 14px; line-height: 1.5; margin-top: 12px;">Your transaction has been securely settled. Please collect your sheets from the printer output tray.</p>
                 </div>
             </body>
             </html>
@@ -240,4 +241,4 @@ app.post('/trigger-print', async (req, res) => {
 });
 
 const PORT = 3000;
-server.listen(PORT, '0.0.0.0', () => { console.log('🚀 Premium App listening on port ' + PORT); });
+server.listen(PORT, '0.0.0.0', () => { console.log('🚀 Premium Light App listening on port ' + PORT); });
