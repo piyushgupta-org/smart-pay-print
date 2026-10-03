@@ -21,12 +21,12 @@ if (!fs.existsSync(path.join(__dirname, 'uploads'))){
 const RAZORPAY_KEY_ID = "rzp_live_YOUR_LIVE_KEY_ID_HERE"; 
 
 const printers = {
-    "PRINTER_01": { name: "Library LaserJet", location: "First Floor", pdfPrice: 5, photoPrice: 10 },
-    "PRINTER_02": { name: "Lab Color Printer", location: "Ground Floor", pdfPrice: 8, photoPrice: 15 },
-    "PRINTER_03": { name: "Canteen Area Printer", location: "Canteen", pdfPrice: 5, photoPrice: 10 }
+    "PRINTER_01": { name: "Central Library LaserJet", location: "Block A, 1st Floor", pdfPrice: 5, photoPrice: 10 },
+    "PRINTER_02": { name: "Tech Lab Color Printer", location: "Lab 3, Ground Floor", pdfPrice: 8, photoPrice: 15 },
+    "PRINTER_03": { name: "Canteen Kiosk Printer", location: "Cafeteria Zone", pdfPrice: 5, photoPrice: 10 }
 };
 
-// 1. दुकानदार का लाइव डैशबोर्ड (Navy Blue और Deep Purple डार्क थीम)
+// 1. दुकानदार का प्रीमियम डार्क-लाइट डैशबोर्ड Panel
 app.get('/dashboard', (req, res) => {
     res.send(`
         <html>
@@ -34,25 +34,25 @@ app.get('/dashboard', (req, res) => {
             <title>Merchant Live Monitor</title>
             <script src="/socket.io/socket.io.js"></script>
             <style>
-                body { font-family: Arial, sans-serif; text-align: center; padding: 50px; background-color: #0b0f19; color: #ffffff; }
-                .card { background: #131a2c; max-width: 500px; margin: auto; padding: 30px; border-radius: 12px; box-shadow: 0px 0px 20px rgba(124, 58, 237, 0.2); border: 2px solid #7c3aed; }
-                h2 { color: #a78bfa; margin: 0 0 10px 0; }
-                hr { border: 0; border-top: 1px solid #1e293b; margin: 20px 0; }
-                .job-item { background: #0f172a; padding: 12px; margin: 10px 0; border-radius: 6px; border-left: 5px solid #a78bfa; display: flex; justify-content: space-between; align-items: center; border: 1px solid #3b0764; border-left: 5px solid #a78bfa; }
-                .job-price { color: #a78bfa; font-weight: bold; font-size: 18px; }
+                body { font-family: 'Segoe UI', Arial, sans-serif; background-color: #0b0f19; color: #ffffff; padding: 40px; margin: 0; }
+                .card { background: #131a2c; max-width: 600px; margin: auto; padding: 35px; border-radius: 16px; box-shadow: 0px 10px 30px rgba(124, 58, 237, 0.2); border: 1px solid #3b4252; }
+                h2 { color: #ffffff; margin: 0 0 5px 0; display: flex; justify-content: space-between; align-items: center; font-size: 26px; }
+                .status-badge { font-size: 12px; background: #a78bfa; color: #0b0f19; padding: 6px 14px; border-radius: 20px; font-weight: bold; uppercase; tracking-wider; }
+                hr { border: 0; border-top: 1px solid #1e293b; margin: 25px 0; }
+                .job-item { background: #ffffff; color: #0f172a; padding: 16px; margin: 12px 0; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border-left: 6px solid #7c3aed; transition: 0.2s; }
+                .job-item:hover { transform: translateY(-2px); }
+                .job-price { color: #7c3aed; font-weight: 800; font-size: 20px; }
             </style>
         </head>
         <body>
             <div class="card">
-                <h2>🖨️ Shopkeeper Live Print Monitor</h2>
-                <p style="color: #94a3b8; font-size: 13px;">Status: <span style="color: #a78bfa; font-weight: bold;">● Active & Listening</span></p>
+                <h2>🖨️ Kiosk Print Monitor <span class="status-badge">● System Online</span></h2>
+                <p style="color: #94a3b8; font-size: 14px; margin: 0;">Real-time Cloud Node Spooler</p>
                 <hr>
-                <div style="text-align: left;">
-                    <h3 style="color: #cbd5e1;">Incoming Print Queue:</h3>
-                    <ul id="print-list" style="list-style-type: none; padding: 0;">
-                        <li id="no-jobs" style="color: #64748b; font-style: italic; text-align: center; padding: 20px;">Waiting for verified user bank payments...</li>
-                    </ul>
-                </div>
+                <h3 style="color: #a78bfa; font-size: 16px; tracking-wide;">Active Queue Stream:</h3>
+                <ul id="print-list" style="list-style-type: none; padding: 0;">
+                    <li id="no-jobs" style="color: #64748b; font-style: italic; text-align: center; padding: 40px;">Waiting for verified user bank payments...</li>
+                </ul>
             </div>
             <script>
                 const socket = io();
@@ -62,46 +62,69 @@ app.get('/dashboard', (req, res) => {
                     const list = document.getElementById('print-list');
                     const item = document.createElement('li');
                     item.className = "job-item";
-                    item.innerHTML = '<div><b style="color:#ffffff;">' + data.printerName + '</b> <span style="color:#94a3b8; font-size:12px;">(' + data.format + ')</span></div><div class="job-price">₹' + data.cost + '</div>';
+                    item.innerHTML = '<div><b style="font-size:15px;">' + data.printerName + '</b><br><span style="color:#64748b; font-size:12px; font-weight:600;">Format: ' + data.format + '</span></div><div class="job-price">₹' + data.cost + '</div>';
                     list.prepend(item);
                     const audio = new AudioContext(); const osc = audio.createOscillator();
-                    osc.connect(audio.destination); osc.start(); osc.stop(audio.currentTime + 0.1);
+                    osc.connect(audio.destination); osc.start(); osc.stop(audio.currentTime + 0.15);
                 });
             </script>
         </body>
         </html>
     `);
 });
-// 2. यूजर का होम पेज (Smart Pay-Per-Print Hub - Black, Purple & Navy Blue Theme)
+// 2. ग्राहक का नया और आकर्षक मोबाइल अपलोड पेज (Smart Pay-Per-Print Hub)
 app.get('/print', (req, res) => {
     const printerId = req.query.id || "PRINTER_01"; 
     const activePrinter = printers[printerId] || printers["PRINTER_01"];
 
     res.send(`
         <html>
-        <body style="font-family: Arial; text-align: center; padding: 50px; background-color: #0b0f19; color: #ffffff;">
-            <div style="background: #131a2c; max-width: 400px; margin: auto; padding: 30px; border-radius: 12px; box-shadow: 0px 0px 20px rgba(124, 58, 237, 0.15); border: 1px solid #1e293b; border-top: 5px solid #7c3aed;">
-                <h2 style="color: #ffffff; margin: 0 0 5px 0;">Smart Pay-Per-Print Hub 🖨️✨</h2>
-                <p style="font-size: 13px; color: #a78bfa; margin: 0 0 15px 0;">Connected to: <b>${activePrinter.name}</b></p>
-                <p style="font-size: 12px; color: #94a3b8; margin: 5px 0;">Location: <b>${activePrinter.location}</b></p>
-                
-                <div style="background: #0f172a; padding: 12px; border-radius: 8px; font-size: 13px; display: flex; justify-content: space-around; color: #cbd5e1; margin: 20px 0; border: 1px solid #1e293b;">
-                    <div>📄 PDF: <b style="color: #a78bfa;">₹${activePrinter.pdfPrice}/page</b></div>
-                    <div style="width: 1px; background: #334155;"></div>
-                    <div>🖼️ Photo: <b style="color: #a78bfa;">₹${activePrinter.photoPrice}/photo</b></div>
+        <head>
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Smart Pay-Per-Print Hub</title>
+            <style>
+                body { font-family: 'Segoe UI', Arial, sans-serif; background-color: #0b0f19; display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; margin: 0; }
+                .card { background: #131a2c; max-width: 400px; width: 100%; padding: 35px; border-radius: 24px; box-shadow: 0px 15px 35px rgba(124, 58, 237, 0.2); border: 1px solid #1e293b; text-align: center; border-top: 6px solid #7c3aed; }
+                h2 { color: #ffffff; margin: 0 0 6px 0; font-size: 24px; font-weight: 800; }
+                .loc-tag { font-size: 13px; color: #a78bfa; font-weight: 600; margin-bottom: 20px; display: inline-block; background: rgba(124, 58, 237, 0.1); padding: 4px 14px; border-radius: 20px; }
+                .rates-box { background: #ffffff; padding: 14px; border-radius: 16px; font-size: 13px; display: flex; justify-content: space-around; color: #0f172a; margin: 20px 0; box-shadow: 0 4px 10px rgba(0,0,0,0.05); font-weight: 600; }
+                .file-custom { border: 2px dashed #475569; padding: 35px 20px; border-radius: 16px; background: rgba(255,255,255,0.02); cursor: pointer; display: block; margin-bottom: 25px; transition: 0.2s; }
+                .file-custom:hover { border-color: #7c3aed; background: rgba(124, 58, 237, 0.05); }
+                .upload-btn { width: 100%; background: #ffffff; color: #0b0f19; border: none; padding: 15px; font-size: 15px; font-weight: 800; border-radius: 14px; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 12px rgba(255,255,255,0.1); text-transform: uppercase; letter-spacing: 0.5px; }
+                .upload-btn:hover { background: #a78bfa; color: #0b0f19; transform: translateY(-1px); }
+            </style>
+        </head>
+        <body>
+            <div class="card">
+                <h2>Smart Pay-Per-Print Hub 🖨️</h2>
+                <div class="loc-tag">📍 ${activePrinter.location}</div>
+                <p style="font-size:12px; color:#94a3b8; margin:0 0 15px 0;">Device: <b>${activePrinter.name}</b></p>
+                <div class="rates-box">
+                    <div>📄 PDF: <span style="color:#7c3aed;"><b>₹${activePrinter.pdfPrice}/pg</b></span></div>
+                    <div style="width: 1px; background: #e2e8f0;"></div>
+                    <div>🖼️ Photo: <span style="color:#7c3aed;"><b>₹${activePrinter.photoPrice}/img</b></span></div>
                 </div>
-                
-                <form action="/upload?id=${printerId}" method="POST" enctype="multipart/form-data" style="margin-top: 25px;">
-                    <input type="file" name="document" accept="application/pdf, image/*" required style="margin-bottom: 20px; color: #94a3b8; font-size: 14px;" /><br>
-                    <button type="submit" style="padding: 12px 24px; font-size: 15px; background-color: #7c3aed; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);">Upload & Calculate</button>
+                <form action="/upload?id=${printerId}" method="POST" enctype="multipart/form-data">
+                    <label class="file-custom">
+                        <input type="file" name="document" accept="application/pdf, image/*" required style="display:none;" id="file-in"/>
+                        <span style="font-size:32px; display:block;">📂</span>
+                        <span style="display:block; font-size:13px; font-weight:600; margin-top:10px; color:#94a3b8;" id="file-lbl">Tap to Select Document</span>
+                    </label>
+                    <button type="submit" class="upload-btn">Process Invoice</button>
                 </form>
             </div>
+            <script>
+                document.getElementById('file-in').addEventListener('change', function(e) {
+                    document.getElementById('file-lbl').innerText = e.target.files.name;
+                    document.getElementById('file-lbl').style.color = '#ffffff';
+                });
+            </script>
         </body>
         </html>
     `);
 });
 
-// 3. यूजर का पेमेंट पेज (विद रेज़रपे लाइव सपोर्ट)
+// 3. ग्राहक का इनवॉइस पेमेंट पेज (शुरुआती भाग)
 app.post('/upload', upload.single('document'), async (req, res) => {
     let filePath = "";
     try {
@@ -124,26 +147,34 @@ app.post('/upload', upload.single('document'), async (req, res) => {
             fs.unlinkSync(filePath); filePath = processedPhotoPath; req.file.filename = req.file.filename + '_converted.png';
         }
         const amountInPaise = totalCost * 100;
-
         res.send(`
             <html>
             <head>
                 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                <title>Secure Payment</title>
+                <title>Secure Checkout</title>
                 <script src="https://razorpay.com"></script>
+                <style>
+                    body { font-family: 'Segoe UI', Arial, sans-serif; background-color: #0b0f19; display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; margin: 0; }
+                    .card { background: #131a2c; max-width: 400px; width: 100%; padding: 35px; border-radius: 24px; box-shadow: 0px 15px 35px rgba(124, 58, 237, 0.2); border: 1px solid #1e293b; text-align: center; }
+                    .invoice-box { background: #ffffff; border: 1px solid #e2e8f0; padding: 18px; border-radius: 16px; text-align: left; font-size: 14px; margin: 25px 0; box-shadow: 0 4px 6px rgba(0,0,0,0.02); color: #0f172a; }
+                    .row { display: flex; justify-content: space-between; margin: 8px 0; font-weight: 500; }
+                    .pay-btn { width: 100%; background: #a78bfa; color: #0b0f19; border: none; padding: 15px; font-size: 15px; font-weight: 800; border-radius: 14px; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 12px rgba(167,139,250,0.3); text-transform: uppercase; }
+                    .pay-btn:hover { background: #ffffff; }
+                </style>
             </head>
-            <body style="font-family: Arial; text-align: center; padding: 50px; background-color: #0b0f19; color: #ffffff;">
-                <div style="background: #131a2c; max-width: 400px; margin: auto; padding: 30px; border-radius: 12px; box-shadow: 0px 0px 20px rgba(124, 58, 237, 0.15); border: 1px solid #1e293b;">
-                    <h2 style="color: #34d399; margin: 0 0 15px 0;">Calculation Success! ✅</h2>
-                    <div style="text-align: left; background: #0f172a; padding: 15px; border-radius: 8px; font-size: 14px; color: #cbd5e1; margin-bottom: 25px; line-height: 1.6; border: 1px solid #1e293b;">
-                        <p style="margin: 4px 0;">Format: <b style="color: #ffffff;">${displayType}</b></p>
-                        <p style="margin: 4px 0;">Total Pages/Items: <b style="color: #ffffff;">${totalPages}</b></p>
-                        <p style="margin: 4px 0; font-size: 16px;">Total Amount: <span style="color: #34d399;"><b>₹${totalCost}</b></span></p>
+            <body>
+                <div class="card">
+                    <h3 style="margin:0; color:#ffffff; font-size:22px; font-weight:800;">Checkout Invoice</h3>
+                    <p style="margin:5px 0 0 0; font-size:12px; color:#94a3b8;">Transaction Node Initialized</p>
+                    <div class="invoice-box">
+                        <div class="row"><span>File Format:</span><b>${displayType}</b></div>
+                        <div class="row"><span>Total Pages:</span><b>${totalPages}</b></div>
+                        <div style="border-top: 1px dashed #cbd5e1; margin: 12px 0;"></div>
+                        <div class="row" style="font-size:16px; font-weight: 800;"><span>Grand Total:</span><span style="color:#7c3aed;">₹${totalCost}</span></div>
                     </div>
-                    <hr style="border: 0; border-top: 1px solid #1e293b; margin: 20px 0;">
-                    <button id="rzp-button" style="padding: 14px 20px; font-size: 15px; background-color: #2563eb; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);">Pay Securely via UPI / Card 💳</button>
+                    <button id="rzp-button" class="pay-btn">Pay via UPI / Card 💳</button>
                     <br><br>
-                    <a href="/print?id=${printerId}" style="color: #f87171; text-decoration: none; font-size: 13px; font-weight: bold;">Cancel Order</a>
+                    <a href="/print?id=${printerId}" style="color: #ef4444; font-size: 13px; text-decoration: none; font-weight: 700;">Cancel Order</a>
                 </div>
                 <script>
                     var options = {
@@ -183,11 +214,11 @@ app.post('/trigger-print', async (req, res) => {
         await ptp.print(filePath); fs.unlinkSync(filePath);
         res.send(`
             <html>
-            <body style="font-family: Arial; text-align: center; padding: 50px; background-color: #0b0f19; color: #ffffff; display: flex; align-items: center; justify-content: center; min-h: screen;">
-                <div style="background: #131a2c; max-width: 400px; padding: 40px; border-radius: 12px; box-shadow: 0 10px 30px rgba(124, 58, 237, 0.1); border: 1px solid #1e293b; text-align: center;">
-                    <span style="font-size: 50px;">🖨️🎉</span>
-                    <h2 style="color: #34d399; margin-top: 15px;">Printing Started!</h2>
-                    <p style="color: #94a3b8; font-size: 14px; line-height: 1.5;">Your payment has been securely settled. Please collect your documents from the output tray.</p>
+            <body style="font-family: 'Segoe UI', Arial, sans-serif; background-color: #0b0f19; display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; margin: 0;">
+                <div style="background: #131a2c; max-width: 400px; padding: 40px; border-radius: 24px; box-shadow: 0 10px 30px rgba(124, 58, 237, 0.1); border: 1px solid #1e293b; text-align: center;">
+                    <span style="font-size: 55px; display:block; mb-4;">🖨️🎉</span>
+                    <h2 style="color: #ffffff; font-weight:800; font-size:24px; margin-top:15px;">Printing Started!</h2>
+                    <p style="color: #94a3b8; font-size: 14px; line-height: 1.6; margin-top:10px;">Your transaction has been settled. Please collect your sheets from the printer output tray.</p>
                 </div>
             </body>
             </html>
@@ -197,4 +228,3 @@ app.post('/trigger-print', async (req, res) => {
 
 const PORT = 3000;
 server.listen(PORT, '0.0.0.0', () => { console.log('🚀 Premium App listening on port ' + PORT); });
-
