@@ -11,12 +11,14 @@ const { Server } = require('socket.io');
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server); 
-
 const upload = multer({ dest: path.join(__dirname, 'uploads/') });
 
 if (!fs.existsSync(path.join(__dirname, 'uploads'))){
     fs.mkdirSync(path.join(__dirname, 'uploads'));
 }
+
+// ⚠️ रेज़रपे से अप्रूवल मिलने के बाद यहाँ अपनी 'rzp_live_...' चाबी डालना
+const RAZORPAY_KEY_ID = "rzp_live_YOUR_LIVE_KEY_ID_HERE"; 
 
 const printers = {
     "PRINTER_01": { name: "Library LaserJet", location: "First Floor", pdfPrice: 5, photoPrice: 10 },
@@ -24,19 +26,31 @@ const printers = {
     "PRINTER_03": { name: "Canteen Area Printer", location: "Canteen", pdfPrice: 5, photoPrice: 10 }
 };
 
-// 1. दुकानदार का लाइव सिंपल डैशबोर्ड
+// 1. दुकानदार का लाइव डैशबोर्ड (Navy Blue और Deep Purple डार्क थीम)
 app.get('/dashboard', (req, res) => {
     res.send(`
         <html>
-        <body style="font-family: Arial; text-align: center; padding: 50px; background-color: #f4f4f9;">
-            <div style="background: white; max-width: 500px; margin: auto; padding: 30px; border-radius: 10px; box-shadow: 0px 0px 10px rgba(0,0,0,0.1);">
+        <head>
+            <title>Merchant Live Monitor</title>
+            <script src="/socket.io/socket.io.js"></script>
+            <style>
+                body { font-family: Arial, sans-serif; text-align: center; padding: 50px; background-color: #0b0f19; color: #ffffff; }
+                .card { background: #131a2c; max-width: 500px; margin: auto; padding: 30px; border-radius: 12px; box-shadow: 0px 0px 20px rgba(124, 58, 237, 0.2); border: 2px solid #7c3aed; }
+                h2 { color: #a78bfa; margin: 0 0 10px 0; }
+                hr { border: 0; border-top: 1px solid #1e293b; margin: 20px 0; }
+                .job-item { background: #0f172a; padding: 12px; margin: 10px 0; border-radius: 6px; border-left: 5px solid #a78bfa; display: flex; justify-content: space-between; align-items: center; border: 1px solid #3b0764; border-left: 5px solid #a78bfa; }
+                .job-price { color: #a78bfa; font-weight: bold; font-size: 18px; }
+            </style>
+        </head>
+        <body>
+            <div class="card">
                 <h2>🖨️ Shopkeeper Live Print Monitor</h2>
-                <p>Status: <span style="color: green; font-weight: bold;">● Active & Listening</span></p>
-                <hr style="margin: 20px 0;">
+                <p style="color: #94a3b8; font-size: 13px;">Status: <span style="color: #a78bfa; font-weight: bold;">● Active & Listening</span></p>
+                <hr>
                 <div style="text-align: left;">
-                    <h3>Incoming Print Queue:</h3>
+                    <h3 style="color: #cbd5e1;">Incoming Print Queue:</h3>
                     <ul id="print-list" style="list-style-type: none; padding: 0;">
-                        <li id="no-jobs" style="color: #aaa; font-style: italic;">Waiting for users to scan QR...</li>
+                        <li id="no-jobs" style="color: #64748b; font-style: italic; text-align: center; padding: 20px;">Waiting for verified user bank payments...</li>
                     </ul>
                 </div>
             </div>
@@ -47,10 +61,8 @@ app.get('/dashboard', (req, res) => {
                     if(noJobs) noJobs.remove();
                     const list = document.getElementById('print-list');
                     const item = document.createElement('li');
-                    item.style.background = '#e9ecef'; item.style.padding = '12px'; item.style.margin = '10px 0';
-                    item.style.borderRadius = '5px'; item.style.borderLeft = '5px solid #28a745';
-                    item.style.display = 'flex'; item.style.justifyContent = 'space-between';
-                    item.innerHTML = '<div><b>' + data.printerName + '</b> (' + data.format + ')</div><div><span style="color: green; font-weight: bold;">Paid</span> <b>₹' + data.cost + '</b></div>';
+                    item.className = "job-item";
+                    item.innerHTML = '<div><b style="color:#ffffff;">' + data.printerName + '</b> <span style="color:#94a3b8; font-size:12px;">(' + data.format + ')</span></div><div class="job-price">₹' + data.cost + '</div>';
                     list.prepend(item);
                     const audio = new AudioContext(); const osc = audio.createOscillator();
                     osc.connect(audio.destination); osc.start(); osc.stop(audio.currentTime + 0.1);
@@ -60,22 +72,28 @@ app.get('/dashboard', (req, res) => {
         </html>
     `);
 });
-// 2. यूजर का होम पेज (Smart Pay-Per-Print Hub)
+// 2. यूजर का होम पेज (Smart Pay-Per-Print Hub - Black, Purple & Navy Blue Theme)
 app.get('/print', (req, res) => {
     const printerId = req.query.id || "PRINTER_01"; 
     const activePrinter = printers[printerId] || printers["PRINTER_01"];
 
     res.send(`
         <html>
-        <body style="font-family: Arial; text-align: center; padding: 50px; background-color: #f4f4f9;">
-            <div style="background: white; max-width: 400px; margin: auto; padding: 30px; border-radius: 10px; box-shadow: 0px 0px 10px rgba(0,0,0,0.1);">
-                <h2>Smart Pay-Per-Print Hub 🖨️✨</h2>
-                <p>Connected to: <b style="color: blue;">${activePrinter.name}</b></p>
-                <p>Location: <b>${activePrinter.location}</b></p>
-                <p>PDF Rate: ₹${activePrinter.pdfPrice}/page | Photo Rate: ₹${activePrinter.photoPrice}/photo</p>
-                <form action="/upload?id=${printerId}" method="POST" enctype="multipart/form-data" style="margin-top: 30px;">
-                    <input type="file" name="document" accept="application/pdf, image/*" required style="margin-bottom: 20px;" /><br>
-                    <button type="submit" style="padding: 10px 20px; font-size: 16px; background-color: green; color: white; border: none; border-radius: 5px; cursor: pointer;">Upload & Calculate</button>
+        <body style="font-family: Arial; text-align: center; padding: 50px; background-color: #0b0f19; color: #ffffff;">
+            <div style="background: #131a2c; max-width: 400px; margin: auto; padding: 30px; border-radius: 12px; box-shadow: 0px 0px 20px rgba(124, 58, 237, 0.15); border: 1px solid #1e293b; border-top: 5px solid #7c3aed;">
+                <h2 style="color: #ffffff; margin: 0 0 5px 0;">Smart Pay-Per-Print Hub 🖨️✨</h2>
+                <p style="font-size: 13px; color: #a78bfa; margin: 0 0 15px 0;">Connected to: <b>${activePrinter.name}</b></p>
+                <p style="font-size: 12px; color: #94a3b8; margin: 5px 0;">Location: <b>${activePrinter.location}</b></p>
+                
+                <div style="background: #0f172a; padding: 12px; border-radius: 8px; font-size: 13px; display: flex; justify-content: space-around; color: #cbd5e1; margin: 20px 0; border: 1px solid #1e293b;">
+                    <div>📄 PDF: <b style="color: #a78bfa;">₹${activePrinter.pdfPrice}/page</b></div>
+                    <div style="width: 1px; background: #334155;"></div>
+                    <div>🖼️ Photo: <b style="color: #a78bfa;">₹${activePrinter.photoPrice}/photo</b></div>
+                </div>
+                
+                <form action="/upload?id=${printerId}" method="POST" enctype="multipart/form-data" style="margin-top: 25px;">
+                    <input type="file" name="document" accept="application/pdf, image/*" required style="margin-bottom: 20px; color: #94a3b8; font-size: 14px;" /><br>
+                    <button type="submit" style="padding: 12px 24px; font-size: 15px; background-color: #7c3aed; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);">Upload & Calculate</button>
                 </form>
             </div>
         </body>
@@ -83,12 +101,11 @@ app.get('/print', (req, res) => {
     `);
 });
 
-// 3. यूजर का पेमेंट पेज (इन-बिल्ट सिमुलेटर इंजन)
+// 3. यूजर का पेमेंट पेज (विद रेज़रपे लाइव सपोर्ट)
 app.post('/upload', upload.single('document'), async (req, res) => {
     let filePath = "";
     try {
         if (!req.file) return res.status(400).send("No file uploaded.");
-
         const printerId = req.query.id;
         const activePrinter = printers[printerId] || printers["PRINTER_01"];
         filePath = path.join(__dirname, 'uploads', req.file.filename);
@@ -106,59 +123,44 @@ app.post('/upload', upload.single('document'), async (req, res) => {
             await sharp(filePath).resize(2480, 3508, { fit: 'inside' }).toFile(processedPhotoPath);
             fs.unlinkSync(filePath); filePath = processedPhotoPath; req.file.filename = req.file.filename + '_converted.png';
         }
+        const amountInPaise = totalCost * 100;
+
         res.send(`
             <html>
             <head>
                 <meta name="viewport" content="width=device-width, initial-scale=1.0">
                 <title>Secure Payment</title>
-                <script src="https://tailwindcss.com"></script>
+                <script src="https://razorpay.com"></script>
             </head>
-            <body style="font-family: Arial; text-align: center; padding: 20px; background-color: #f4f4f9;" class="flex items-center justify-center min-h-screen">
-                <div style="background: white; max-width: 400px; width: 100%; margin: auto; padding: 30px; border-radius: 15px; box-shadow: 0px 0px 15px rgba(0,0,0,0.1);">
-                    <h2 style="color: green; font-weight: bold; font-size: 22px;">Calculation Success! ✅</h2>
-                    <div class="text-left bg-slate-50 p-4 rounded-xl my-4 text-sm space-y-1 border">
-                        <p>Format: <b>${displayType}</b></p>
-                        <p>Total Items: <b>${totalPages}</b></p>
-                        <p class="text-base text-emerald-600 font-bold">Total Amount: <b>₹${totalCost}</b></p>
+            <body style="font-family: Arial; text-align: center; padding: 50px; background-color: #0b0f19; color: #ffffff;">
+                <div style="background: #131a2c; max-width: 400px; margin: auto; padding: 30px; border-radius: 12px; box-shadow: 0px 0px 20px rgba(124, 58, 237, 0.15); border: 1px solid #1e293b;">
+                    <h2 style="color: #34d399; margin: 0 0 15px 0;">Calculation Success! ✅</h2>
+                    <div style="text-align: left; background: #0f172a; padding: 15px; border-radius: 8px; font-size: 14px; color: #cbd5e1; margin-bottom: 25px; line-height: 1.6; border: 1px solid #1e293b;">
+                        <p style="margin: 4px 0;">Format: <b style="color: #ffffff;">${displayType}</b></p>
+                        <p style="margin: 4px 0;">Total Pages/Items: <b style="color: #ffffff;">${totalPages}</b></p>
+                        <p style="margin: 4px 0; font-size: 16px;">Total Amount: <span style="color: #34d399;"><b>₹${totalCost}</b></span></p>
                     </div>
-                    <hr class="my-4">
-                    <button id="rzp-button" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl shadow-md text-sm transition tracking-wide">
-                        Pay with Razorpay 💳
-                    </button>
-                    <br><br><a href="/print?id=${printerId}" style="color: red; text-decoration: none;" class="text-sm">Cancel Order</a>
+                    <hr style="border: 0; border-top: 1px solid #1e293b; margin: 20px 0;">
+                    <button id="rzp-button" style="padding: 14px 20px; font-size: 15px; background-color: #2563eb; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);">Pay Securely via UPI / Card 💳</button>
+                    <br><br>
+                    <a href="/print?id=${printerId}" style="color: #f87171; text-decoration: none; font-size: 13px; font-weight: bold;">Cancel Order</a>
                 </div>
-
-                <!-- इन-बिल्ट मर्चेंट टेस्ट ओवरले -->
-                <div id="payment-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
-                    <div class="bg-white rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl border border-slate-100">
-                        <div class="bg-blue-600 p-5 text-white text-center">
-                            <h3 class="font-extrabold text-lg">Razorpay Secure Checkout</h3>
-                            <p class="text-xs text-blue-100 mt-0.5">Test Mode Environment</p>
-                        </div>
-                        <div class="p-5 text-center">
-                            <p class="text-xs text-slate-400 uppercase tracking-wider font-bold">Amount to Pay</p>
-                            <p class="text-3xl font-black text-slate-800 my-2">₹${totalCost}</p>
-                            <div class="bg-slate-50 border p-4 rounded-xl text-left my-4 space-y-3">
-                                <label class="flex items-center gap-3 p-1"><input type="radio" checked class="w-4 h-4 text-blue-600"><span class="text-sm font-medium text-slate-700">📱 UPI (Google Pay / PhonePe)</span></label>
-                            </div>
-                            <button id="confirm-pay" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3.5 rounded-xl text-sm shadow-md">Simulate Success Payment ✓</button>
-                            <button id="close-modal" class="w-full bg-slate-100 text-slate-500 hover:bg-slate-200 font-bold py-2.5 rounded-xl text-xs mt-2">Close</button>
-                        </div>
-                    </div>
-                </div>
-
                 <script>
-                    document.getElementById('rzp-button').onclick = function() { document.getElementById('payment-modal').style.display = 'flex'; };
-                    document.getElementById('close-modal').onclick = function() { document.getElementById('payment-modal').style.display = 'none'; };
-                    document.getElementById('confirm-pay').onclick = function() {
-                        var form = document.createElement('form'); form.method = 'POST'; form.action = '/trigger-print';
-                        var inputs = { 'fileName': '${req.file.filename}', 'printerId': '${printerId}', 'format': '${fileType}', 'cost': '${totalCost}' };
-                        for (var key in inputs) {
-                            var input = document.createElement('input'); input.type = 'hidden'; input.name = key; input.value = inputs[key];
-                            form.appendChild(input);
-                        }
-                        document.body.appendChild(form); form.submit();
+                    var options = {
+                        "key": "${RAZORPAY_KEY_ID}", "amount": "${amountInPaise}", "currency": "INR", "name": "Instaprint Network",
+                        "description": "Real-Time Print Automation Node",
+                        "handler": function (response){
+                            var form = document.createElement('form'); form.method = 'POST'; form.action = '/trigger-print';
+                            var inputs = { 'fileName': '${req.file.filename}', 'printerId': '${printerId}', 'format': '${fileType}', 'cost': '${totalCost}' };
+                            for (var key in inputs) {
+                                var input = document.createElement('input'); input.type = 'hidden'; input.name = key; input.value = inputs[key]; form.appendChild(input);
+                            }
+                            document.body.appendChild(form); form.submit();
+                        },
+                        "theme": { "color": "#7c3aed" }
                     };
+                    var rzp1 = new window.Razorpay(options);
+                    document.getElementById('rzp-button').onclick = function(e){ rzp1.open(); e.preventDefault(); }
                 </script>
             </body>
             </html>
@@ -169,7 +171,7 @@ app.post('/upload', upload.single('document'), async (req, res) => {
     }
 });
 
-// 4. प्रिंटर एक्शन और लाइव अलर्ट ट्रिगर
+// 4. प्रिंटर ट्रिगर और लाइव अलर्ट
 app.use(express.urlencoded({ extended: true }));
 app.post('/trigger-print', async (req, res) => {
     const { fileName, printerId, format, cost } = req.body;
@@ -181,10 +183,11 @@ app.post('/trigger-print', async (req, res) => {
         await ptp.print(filePath); fs.unlinkSync(filePath);
         res.send(`
             <html>
-            <body style="font-family: Arial; text-align: center; padding: 50px; background-color: #f4f4f9;">
-                <div style="background: white; max-width: 400px; margin: auto; padding: 30px; border-radius: 10px; box-shadow: 0px 0px 10px rgba(0,0,0,0.1);">
-                    <h1 style="color: green;">Printing Started! 🖨️🚀</h1>
-                    <p style="font-size: 18px;">Payment verified by Razorpay Simulation. Please collect sheets.</p>
+            <body style="font-family: Arial; text-align: center; padding: 50px; background-color: #0b0f19; color: #ffffff; display: flex; align-items: center; justify-content: center; min-h: screen;">
+                <div style="background: #131a2c; max-width: 400px; padding: 40px; border-radius: 12px; box-shadow: 0 10px 30px rgba(124, 58, 237, 0.1); border: 1px solid #1e293b; text-align: center;">
+                    <span style="font-size: 50px;">🖨️🎉</span>
+                    <h2 style="color: #34d399; margin-top: 15px;">Printing Started!</h2>
+                    <p style="color: #94a3b8; font-size: 14px; line-height: 1.5;">Your payment has been securely settled. Please collect your documents from the output tray.</p>
                 </div>
             </body>
             </html>
@@ -193,4 +196,5 @@ app.post('/trigger-print', async (req, res) => {
 });
 
 const PORT = 3000;
-server.listen(PORT, '0.0.0.0', () => { console.log('🚀 Server running on port ' + PORT); });
+server.listen(PORT, '0.0.0.0', () => { console.log('🚀 Premium App listening on port ' + PORT); });
+
