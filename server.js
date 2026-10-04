@@ -17,7 +17,7 @@ if (!fs.existsSync(path.join(__dirname, 'uploads'))){
     fs.mkdirSync(path.join(__dirname, 'uploads'));
 }
 
-// ⚠️ रेज़रपे से अप्रूवल मिलने के बाद यहाँ अपनी 'rzp_live_...' चाबी डालना
+// ⚠️ रेज़रपे की तुम्हारी असली चाबी
 const RAZORPAY_KEY_ID = "rzp_live_TjkxhC57dqHugH"; 
 
 const printers = {
@@ -25,9 +25,6 @@ const printers = {
     "PRINTER_02": { name: "Tech Lab Color Printer", location: "Lab 3, Ground Floor", pdfPrice: 8, photoPrice: 15 },
     "PRINTER_03": { name: "Canteen Kiosk Printer", location: "Cafeteria Zone", pdfPrice: 5, photoPrice: 10 }
 };
-// प्रिंटर पैकेज को रेंडर के क्लाउड सर्वर पर क्रैश होने से बचाने के लिए सेफ चेक
-const isRenderCloud = process.env.RENDER === 'true';
-
 // 1. दुकानदार का प्रीमियम लाइव डैशबोर्ड (Cosmic Neon Light Mix)
 app.get('/dashboard', (req, res) => {
     res.send(`
@@ -67,11 +64,7 @@ app.get('/dashboard', (req, res) => {
                 </ul>
             </div>
             <script>
-                // लाइव डोमेन को ऑटोमैटिक डिटेक्ट करने के लिए सॉकेट सेटअप
-                const socket = io(window.location.origin, {
-                    transports: ['websocket', 'polling']
-                });
-                
+                const socket = io(window.location.origin, { transports: ['websocket', 'polling'] });
                 socket.on('new-print-job', (data) => {
                     const noJobs = document.getElementById('no-jobs');
                     if(noJobs) noJobs.remove();
@@ -80,22 +73,17 @@ app.get('/dashboard', (req, res) => {
                     item.className = "job-item";
                     item.innerHTML = '<div><b style="font-size:14px; font-weight:600; color:#0f172a;">' + data.printerName + '</b><br><span style="color:#64748b; font-size:12px;">Format: ' + data.format + '</span></div><div class="job-price">₹' + data.cost + '</div>';
                     list.prepend(item);
-                    
-                    // ऑडियो नोटिफिकेशन
                     try {
                         const audio = new (window.AudioContext || window.webkitAudioContext)(); 
-                        const osc = audio.createOscillator();
-                        osc.connect(audio.destination); 
-                        osc.start(); 
-                        osc.stop(audio.currentTime + 0.15);
-                    } catch(e) { console.log("Audio play blocked"); }
+                        const osc = audio.createOscillator(); osc.connect(audio.destination); 
+                        osc.start(); osc.stop(audio.currentTime + 0.15);
+                    } catch(e) {}
                 });
             </script>
         </body>
         </html>
     `);
 });
-
 // 2. ग्राहक का आकर्षक मोबाइल अपलोड पेज
 app.get('/print', (req, res) => {
     const printerId = req.query.id || "PRINTER_01"; 
@@ -123,7 +111,6 @@ app.get('/print', (req, res) => {
                 .file-custom:hover { border-color: #7c3aed; background: #f5f3ff; transform: scale(1.01); }
                 .upload-btn { width: 100%; background: linear-gradient(135deg, #7c3aed, #4f46e5); color: #ffffff; border: none; padding: 15px; font-size: 14px; font-weight: 700; border-radius: 14px; cursor: pointer; transition: all 0.2s ease; box-shadow: 0 6px 20px rgba(124, 58, 237, 0.3); text-transform: uppercase; letter-spacing: 0.5px; }
                 .upload-btn:hover { background: linear-gradient(135deg, #6d28d9, #4338ca); transform: translateY(-1px); box-shadow: 0 8px 25px rgba(124, 58, 237, 0.4); }
-                @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
             </style>
         </head>
         <body>
@@ -148,7 +135,7 @@ app.get('/print', (req, res) => {
             <script>
                 document.getElementById('file-in').addEventListener('change', function(e) {
                     if(e.target.files.length > 0) {
-                        document.getElementById('file-lbl').innerText = e.target.files.name;
+                        document.getElementById('file-lbl').innerText = e.target.files[0].name;
                         document.getElementById('file-lbl').style.color = '#7c3aed';
                     }
                 });
@@ -166,28 +153,21 @@ app.post('/upload', upload.single('document'), async (req, res) => {
         filePath = path.join(__dirname, 'uploads', req.file.filename);
         
         const originalFileName = req.file.originalname;
-        let totalPages = 1; 
-        let totalCost = 0; 
-        let fileType = req.file.mimetype; 
-        let displayType = "PDF Document";
+        let totalPages = 1; let totalCost = 0; let fileType = req.file.mimetype; let displayType = "PDF Document";
 
         if (fileType === 'application/pdf') {
             const dataBuffer = new Uint8Array(fs.readFileSync(filePath));
             const loadingTask = pdfjsLib.getDocument({ data: dataBuffer });
             const pdf = await loadingTask.promise;
-            totalPages = pdf.numPages; 
-            totalCost = totalPages * activePrinter.pdfPrice;
+            totalPages = pdf.numPages; totalCost = totalPages * activePrinter.pdfPrice;
         } else if (fileType.startsWith('image/')) {
-            displayType = "Image/Photo"; 
-            totalCost = activePrinter.photoPrice;
+            displayType = "Image/Photo"; totalCost = activePrinter.photoPrice;
             const processedPhotoPath = filePath + '_converted.png';
             await sharp(filePath).resize(2480, 3508, { fit: 'inside' }).toFile(processedPhotoPath);
-            fs.unlinkSync(filePath); 
-            filePath = processedPhotoPath;
+            fs.unlinkSync(filePath); filePath = processedPhotoPath;
         }
         const amountInPaise = totalCost * 100;
         
-        // असली रेज़रपे पेमेंट गेटवे स्क्रीन (Premium Cosmic Neon Theme)
         res.send(`
             <html>
             <head>
@@ -198,53 +178,38 @@ app.post('/upload', upload.single('document'), async (req, res) => {
                     body { 
                         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
                         background-color: #030712; 
-                        background-image: 
-                            radial-gradient(at 0% 0%, rgba(124, 58, 237, 0.25) 0px, transparent 50%), 
-                            radial-gradient(at 100% 100%, rgba(79, 70, 229, 0.25) 0px, transparent 50%),
-                            linear-gradient(135deg, #030712 0%, #090514 100%);
+                        background-image: radial-gradient(at 0% 0%, rgba(124, 58, 237, 0.25) 0px, transparent 50%), radial-gradient(at 100% 100%, rgba(79, 70, 229, 0.25) 0px, transparent 50%), linear-gradient(135deg, #030712 0%, #090514 100%);
                         display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; margin: 0; 
                     }
-                    .card { background: #ffffff; max-width: 400px; width: 100%; padding: 35px; border-radius: 24px; box-shadow: 0px 25px 60px rgba(0, 0, 0, 0.5), 0px 0px 40px rgba(124, 58, 237, 0.1); border: 1px solid rgba(255,255,255,0.8); text-align: center; animation: fadeIn 0.3s ease-out; }
+                    .card { background: #ffffff; max-width: 400px; width: 100%; padding: 35px; border-radius: 24px; box-shadow: 0px 25px 60px rgba(0, 0, 0, 0.5); text-align: center; }
                     .invoice-box { background: #f8fafc; border: 1px solid #f1f5f9; padding: 18px; border-radius: 16px; text-align: left; font-size: 13px; margin: 25px 0; color: #334155; }
                     .row { display: flex; justify-content: space-between; margin: 8px 0; font-weight: 500; }
-                    .pay-btn { width: 100%; background: linear-gradient(135deg, #7c3aed, #4f46e5); color: #ffffff; border: none; padding: 15px; font-size: 14px; font-weight: 700; border-radius: 14px; cursor: pointer; transition: all 0.2s ease; box-shadow: 0 6px 20px rgba(124, 58, 237, 0.3); text-transform: uppercase; letter-spacing: 0.5px; }
-                    .pay-btn:hover { background: linear-gradient(135deg, #6d28d9, #4338ca); transform: translateY(-1px); box-shadow: 0 8px 25px rgba(124, 58, 237, 0.4); }
+                    .pay-btn { width: 100%; background: linear-gradient(135deg, #7c3aed, #4f46e5); color: #ffffff; border: none; padding: 15px; font-size: 14px; font-weight: 700; border-radius: 14px; cursor: pointer; text-transform: uppercase; }
                 </style>
             </head>
             <body>
                 <div class="card">
-                    <h3 style="margin:0; color:#0f172a; font-size:20px; font-weight:700;">Checkout Invoice</h3>
-                    <p style="margin:5px 0 0 0; font-size:12px; color:#64748b;">Smart Pay-Per-Print Secure Gateway</p>
+                    <h3>Checkout Invoice</h3>
                     <div class="invoice-box">
-                        <div class="row"><span style="margin-right: 10px;">File Name:</span><b style="color:#0f172a; word-break: break-all; text-align: right;">${originalFileName}</b></div>
-                        <div class="row"><span>Format:</span><b style="color:#0f172a;">${displayType}</b></div>
-                        <div class="row"><span>Total Pages:</span><b style="color:#0f172a;">${totalPages}</b></div>
+                        <div class="row"><span>File Name:</span><b style="word-break: break-all;">${originalFileName}</b></div>
+                        <div class="row"><span>Format:</span><b>${displayType}</b></div>
+                        <div class="row"><span>Pages:</span><b>${totalPages}</b></div>
                         <div style="border-top: 1px dashed #cbd5e1; margin: 12px 0;"></div>
                         <div class="row" style="font-size:16px; font-weight: 800;"><span>Grand Total:</span><span style="color:#7c3aed;">₹${totalCost}</span></div>
                     </div>
                     <button id="rzp-button" class="pay-btn">Pay via UPI / Card 💳</button>
-                    <br><br>
-                    <a href="/print?id=${printerId}" style="color: #ef4444; font-size: 13px; text-decoration: none; font-weight: 600;">Cancel Order</a>
                 </div>
                 <script>
                     var options = {
-                        "key": "${RAZORPAY_KEY_ID}", 
-                        "amount": "${amountInPaise}", 
-                        "currency": "INR", 
-                        "name": "Smart Pay-Per-Print Hub",
-                        "description": "Real-Time Print Automation Node",
+                        "key": "${RAZORPAY_KEY_ID}", "amount": "${amountInPaise}", "currency": "INR", "name": "Smart Pay-Per-Print Hub",
                         "handler": function (response){
-                            var form = document.createElement('form'); 
-                            form.method = 'POST'; 
-                            form.action = '/trigger-print';
+                            var form = document.createElement('form'); form.method = 'POST'; form.action = '/trigger-print';
                             var inputs = { 'fileName': '${req.file.filename}', 'printerId': '${printerId}', 'format': '${fileType}', 'cost': '${totalCost}' };
                             for (var key in inputs) {
                                 var input = document.createElement('input'); input.type = 'hidden'; input.name = key; input.value = inputs[key]; form.appendChild(input);
                             }
-                            document.body.appendChild(form); 
-                            form.submit();
-                        },
-                        "theme": { "color": "#7c3aed" }
+                            document.body.appendChild(form); form.submit();
+                        }
                     };
                     var rzp1 = new window.Razorpay(options);
                     document.getElementById('rzp-button').onclick = function(e){ rzp1.open(); e.preventDefault(); }
@@ -263,41 +228,23 @@ app.post('/trigger-print', async (req, res) => {
     const { fileName, printerId, format, cost } = req.body;
     const filePath = path.join(__dirname, 'uploads', fileName);
     const activePrinter = printers[printerId] || printers["PRINTER_01"];
-    if (!fs.existsSync(filePath)) return res.send("Error: Session Expired.");
     try {
         io.emit('new-print-job', { printerName: activePrinter.name, format: format.includes('pdf') ? 'PDF' : 'IMAGE', cost: cost });
-        
-        // रेंडर क्लाउड पर होने पर लोकल ड्राइवर स्किप होगा ताकि क्रैश न हो
         const isRenderCloud = process.env.RENDER === 'true';
-        if (!isRenderCloud) {
-            await ptp.print(filePath);
-        }
-        
+        if (!isRenderCloud) { await ptp.print(filePath); }
         if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
         res.send(`
             <html>
             <head>
-                <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                <title>Success | Smart Pay-Per-Print Hub</title>
                 <style>
-                    body { 
-                        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
-                        background-color: #030712; 
-                        background-image: linear-gradient(135deg, #030712 0%, #090514 100%);
-                        display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; 
-                    }
-                    .card { background: #ffffff; padding: 40px; border-radius: 24px; text-align: center; border-top: 6px solid #22c55e; box-shadow: 0px 25px 60px rgba(0, 0, 0, 0.5); }
+                    body { font-family: sans-serif; background-color: #030712; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
+                    .card { background: #ffffff; padding: 40px; border-radius: 24px; text-align: center; border-top: 6px solid #22c55e; }
                 </style>
             </head>
-            <body>
-                <div class="card">
-                    <h2>Payment Successful! 🎉</h2>
-                    <p style="color:#64748b;">Your transaction has been securely settled. Request routed to the spooler tray successfully.</p>
-                </div>
-            </body>
+            <body><div class="card"><h2>Payment Successful! 🎉</h2><p>Request sent to merchant tray.</p></div></body>
             </html>
         `);
-    } catch (err) { res.status(500).send("Printing failed."); }
+    } catch (err) { res.status(500).send("Failed."); }
 });
 
 const PORT = process.env.PORT || 3000;
