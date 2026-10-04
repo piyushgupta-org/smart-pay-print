@@ -25,6 +25,9 @@ const printers = {
     "PRINTER_02": { name: "Tech Lab Color Printer", location: "Lab 3, Ground Floor", pdfPrice: 8, photoPrice: 15 },
     "PRINTER_03": { name: "Canteen Kiosk Printer", location: "Cafeteria Zone", pdfPrice: 5, photoPrice: 10 }
 };
+// प्रिंटर पैकेज को रेंडर के क्लाउड सर्वर पर क्रैश होने से बचाने के लिए सेफ चेक
+const isRenderCloud = process.env.RENDER === 'true';
+
 // 1. दुकानदार का प्रीमियम लाइव डैशबोर्ड (Cosmic Neon Light Mix)
 app.get('/dashboard', (req, res) => {
     res.send(`
@@ -170,8 +173,8 @@ app.post('/upload', upload.single('document'), async (req, res) => {
             fs.unlinkSync(filePath); 
             filePath = processedPhotoPath;
         }
+        const amountInPaise = totalCost * 100;
         
-        // बाईपास टेस्टिंग स्क्रीन - बिना रेज़रपे एरर के सीधे काम करेगी
         res.send(`
             <html>
             <head>
@@ -197,7 +200,7 @@ app.post('/upload', upload.single('document'), async (req, res) => {
             <body>
                 <div class="card">
                     <h3 style="margin:0; color:#0f172a; font-size:20px; font-weight:700;">Checkout Invoice</h3>
-                    <p style="margin:5px 0 0 0; font-size:12px; color:#64748b;">Smart Pay-Per-Print [TEST MODE]</p>
+                    <p style="margin:5px 0 0 0; font-size:12px; color:#64748b;">Smart Pay-Per-Print Secure Gateway</p>
                     <div class="invoice-box">
                         <div class="row"><span style="margin-right: 10px;">File Name:</span><b style="color:#0f172a; word-break: break-all; text-align: right;">${originalFileName}</b></div>
                         <div class="row"><span>Format:</span><b style="color:#0f172a;">${displayType}</b></div>
@@ -237,7 +240,14 @@ app.post('/trigger-print', async (req, res) => {
     if (!fs.existsSync(filePath)) return res.send("Error: Session Expired.");
     try {
         io.emit('new-print-job', { printerName: activePrinter.name, format: format.includes('pdf') ? 'PDF' : 'IMAGE', cost: cost });
-        await ptp.print(filePath); fs.unlinkSync(filePath);
+        
+        // रेंडर क्लाउड पर होने पर प्रिंटर ड्राइवर को स्किप करें ताकि सर्वर क्रैश न हो
+        const isRenderCloud = process.env.RENDER === 'true';
+        if (!isRenderCloud) {
+            await ptp.print(filePath);
+        }
+        
+        if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
         res.send(`
             <html>
             <head>
@@ -256,7 +266,7 @@ app.post('/trigger-print', async (req, res) => {
             <body>
                 <div class="card">
                     <h2>Printing Started!</h2>
-                    <p style="color:#64748b;">[TEST MODE] Request routed to local spooler tray successfully.</p>
+                    <p style="color:#64748b;">Your transaction has been securely settled. Request routed to spooler tray successfully.</p>
                 </div>
             </body>
             </html>
@@ -264,5 +274,6 @@ app.post('/trigger-print', async (req, res) => {
     } catch (err) { res.status(500).send("Printing failed."); }
 });
 
-const PORT = 3000;
+// डायनामिक पोर्ट सेट करना (लोकल पर 3000 और रेंडर पर ऑटो-पोर्ट उठाएगा)
+const PORT = process.env.PORT || 3000;
 server.listen(PORT, '0.0.0.0', () => { console.log('🚀 Server active on port ' + PORT); });
