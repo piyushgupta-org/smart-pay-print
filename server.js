@@ -150,7 +150,6 @@ app.post('/upload', upload.single('document'), async (req, res) => {
         const activePrinter = printers[printerId] || printers["PRINTER_01"];
         filePath = path.join(__dirname, 'uploads', req.file.filename);
         
-        // फाइल का असली नाम स्टोर करना
         const originalFileName = req.file.originalname;
         let totalPages = 1; 
         let totalCost = 0; 
@@ -171,15 +170,13 @@ app.post('/upload', upload.single('document'), async (req, res) => {
             fs.unlinkSync(filePath); 
             filePath = processedPhotoPath;
         }
-        const amountInPaise = totalCost * 100;
         
-        // यहाँ स्ट्रिंग लिटरल्स को बिना बैकस्लैश के सही कर दिया गया है
+        // बाईपास टेस्टिंग स्क्रीन - बिना रेज़रपे एरर के सीधे काम करेगी
         res.send(`
             <html>
             <head>
                 <meta name="viewport" content="width=device-width, initial-scale=1.0">
                 <title>Secure Checkout | Smart Pay-Per-Print Hub</title>
-                <script src="https://razorpay.com"></script>
                 <style>
                     body { 
                         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
@@ -200,7 +197,7 @@ app.post('/upload', upload.single('document'), async (req, res) => {
             <body>
                 <div class="card">
                     <h3 style="margin:0; color:#0f172a; font-size:20px; font-weight:700;">Checkout Invoice</h3>
-                    <p style="margin:5px 0 0 0; font-size:12px; color:#64748b;">Smart Pay-Per-Print Secure Gateway</p>
+                    <p style="margin:5px 0 0 0; font-size:12px; color:#64748b;">Smart Pay-Per-Print [TEST MODE]</p>
                     <div class="invoice-box">
                         <div class="row"><span style="margin-right: 10px;">File Name:</span><b style="color:#0f172a; word-break: break-all; text-align: right;">${originalFileName}</b></div>
                         <div class="row"><span>Format:</span><b style="color:#0f172a;">${displayType}</b></div>
@@ -208,26 +205,20 @@ app.post('/upload', upload.single('document'), async (req, res) => {
                         <div style="border-top: 1px dashed #cbd5e1; margin: 12px 0;"></div>
                         <div class="row" style="font-size:16px; font-weight: 800;"><span>Grand Total:</span><span style="color:#7c3aed;">₹${totalCost}</span></div>
                     </div>
-                    <button id="rzp-button" class="pay-btn">Pay via UPI / Card 💳</button>
+                    <button id="test-pay-btn" class="pay-btn">Simulate Test Payment 💳</button>
                     <br><br>
                     <a href="/print?id=${printerId}" style="color: #ef4444; font-size: 13px; text-decoration: none; font-weight: 600;">Cancel Order</a>
                 </div>
                 <script>
-                    var options = {
-                        "key": "${RAZORPAY_KEY_ID}", "amount": "${amountInPaise}", "currency": "INR", "name": "Smart Pay-Per-Print Hub",
-                        "description": "Real-Time Cloud Print Node",
-                        "handler": function (response){
-                            var form = document.createElement('form'); form.method = 'POST'; form.action = '/trigger-print';
-                            var inputs = { 'fileName': '${req.file.filename}', 'printerId': '${printerId}', 'format': '${fileType}', 'cost': '${totalCost}' };
-                            for (var key in inputs) {
-                                var input = document.createElement('input'); input.type = 'hidden'; input.name = key; input.value = inputs[key]; form.appendChild(input);
-                            }
-                            document.body.appendChild(form); form.submit();
-                        },
-                        "theme": { "color": "#7c3aed" }
-                    };
-                    var rzp1 = new window.Razorpay(options);
-                    document.getElementById('rzp-button').onclick = function(e){ rzp1.open(); e.preventDefault(); }
+                    document.getElementById('test-pay-btn').onclick = function(e){
+                        e.preventDefault();
+                        var form = document.createElement('form'); form.method = 'POST'; form.action = '/trigger-print';
+                        var inputs = { 'fileName': '${req.file.filename}', 'printerId': '${printerId}', 'format': '${fileType}', 'cost': '${totalCost}' };
+                        for (var key in inputs) {
+                            var input = document.createElement('input'); input.type = 'hidden'; input.name = key; input.value = inputs[key]; form.appendChild(input);
+                        }
+                        document.body.appendChild(form); form.submit();
+                    }
                 </script>
             </body>
             </html>
@@ -265,7 +256,7 @@ app.post('/trigger-print', async (req, res) => {
             <body>
                 <div class="card">
                     <h2>Printing Started!</h2>
-                    <p style="color:#64748b;">Your transaction has been securely settled. Please collect your sheets from the tray.</p>
+                    <p style="color:#64748b;">[TEST MODE] Request routed to local spooler tray successfully.</p>
                 </div>
             </body>
             </html>
