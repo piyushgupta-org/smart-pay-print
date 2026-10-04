@@ -67,7 +67,11 @@ app.get('/dashboard', (req, res) => {
                 </ul>
             </div>
             <script>
-                const socket = io();
+                // लाइव डोमेन को ऑटोमैटिक डिटेक्ट करने के लिए सॉकेट सेटअप
+                const socket = io(window.location.origin, {
+                    transports: ['websocket', 'polling']
+                });
+                
                 socket.on('new-print-job', (data) => {
                     const noJobs = document.getElementById('no-jobs');
                     if(noJobs) noJobs.remove();
@@ -76,14 +80,22 @@ app.get('/dashboard', (req, res) => {
                     item.className = "job-item";
                     item.innerHTML = '<div><b style="font-size:14px; font-weight:600; color:#0f172a;">' + data.printerName + '</b><br><span style="color:#64748b; font-size:12px;">Format: ' + data.format + '</span></div><div class="job-price">₹' + data.cost + '</div>';
                     list.prepend(item);
-                    const audio = new AudioContext(); const osc = audio.createOscillator();
-                    osc.connect(audio.destination); osc.start(); osc.stop(audio.currentTime + 0.15);
+                    
+                    // ऑडियो नोटिफिकेशन
+                    try {
+                        const audio = new (window.AudioContext || window.webkitAudioContext)(); 
+                        const osc = audio.createOscillator();
+                        osc.connect(audio.destination); 
+                        osc.start(); 
+                        osc.stop(audio.currentTime + 0.15);
+                    } catch(e) { console.log("Audio play blocked"); }
                 });
             </script>
         </body>
         </html>
     `);
 });
+
 // 2. ग्राहक का आकर्षक मोबाइल अपलोड पेज
 app.get('/print', (req, res) => {
     const printerId = req.query.id || "PRINTER_01"; 
