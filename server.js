@@ -174,45 +174,37 @@ app.post('/upload', upload.single('document'), async (req, res) => {
         }
         const amountInPaise = totalCost * 100;
         
-        // ऑफिशियल रेज़रपे लाइव चेकआउट स्क्रिप्ट के साथ प्रीमियम यूआई
+        // 100% पक्का रीडायरेक्ट मोड यूआई (कोई पॉप-अप ब्लॉक नहीं कर सकता)
         res.send(`
             <html>
             <head>
                 <meta name="viewport" content="width=device-width, initial-scale=1.0">
                 <title>Secure Checkout | Smart Pay-Per-Print Hub</title>
-                <!-- 100% सही और ऑफिशियल रेज़रपे स्क्रिप्ट यूआरएल -->
                 <script src="https://razorpay.com"></script>
                 <style>
                     body { 
                         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
                         background-color: #030712; 
-                        background-image: 
-                            radial-gradient(at 0% 0%, rgba(124, 58, 237, 0.25) 0px, transparent 50%), 
-                            radial-gradient(at 100% 100%, rgba(79, 70, 229, 0.25) 0px, transparent 50%),
-                            linear-gradient(135deg, #030712 0%, #090514 100%);
+                        background-image: radial-gradient(at 0% 0%, rgba(124, 58, 237, 0.25) 0px, transparent 50%), radial-gradient(at 100% 100%, rgba(79, 70, 229, 0.25) 0px, transparent 50%), linear-gradient(135deg, #030712 0%, #090514 100%);
                         display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; margin: 0; 
                     }
-                    .card { background: #ffffff; max-width: 400px; width: 100%; padding: 35px; border-radius: 24px; box-shadow: 0px 25px 60px rgba(0, 0, 0, 0.5), 0px 0px 40px rgba(124, 58, 237, 0.1); border: 1px solid rgba(255,255,255,0.8); text-align: center; animation: fadeIn 0.3s ease-out; }
+                    .card { background: #ffffff; max-width: 400px; width: 100%; padding: 35px; border-radius: 24px; box-shadow: 0px 25px 60px rgba(0, 0, 0, 0.5); text-align: center; }
                     .invoice-box { background: #f8fafc; border: 1px solid #f1f5f9; padding: 18px; border-radius: 16px; text-align: left; font-size: 13px; margin: 25px 0; color: #334155; }
                     .row { display: flex; justify-content: space-between; margin: 8px 0; font-weight: 500; }
-                    .pay-btn { width: 100%; background: linear-gradient(135deg, #7c3aed, #4f46e5); color: #ffffff; border: none; padding: 15px; font-size: 14px; font-weight: 700; border-radius: 14px; cursor: pointer; transition: all 0.2s ease; box-shadow: 0 6px 20px rgba(124, 58, 237, 0.3); text-transform: uppercase; letter-spacing: 0.5px; display: block; position: relative; z-index: 10; }
-                    .pay-btn:hover { background: linear-gradient(135deg, #6d28d9, #4338ca); transform: translateY(-1px); box-shadow: 0 8px 25px rgba(124, 58, 237, 0.4); }
+                    .pay-btn { width: 100%; background: linear-gradient(135deg, #7c3aed, #4f46e5); color: #ffffff; border: none; padding: 15px; font-size: 14px; font-weight: 700; border-radius: 14px; cursor: pointer; text-transform: uppercase; letter-spacing: 0.5px; }
                 </style>
             </head>
             <body>
                 <div class="card">
-                    <h3 style="margin:0; color:#0f172a; font-size:20px; font-weight:700;">Checkout Invoice</h3>
-                    <p style="margin:5px 0 0 0; font-size:12px; color:#64748b;">Smart Pay-Per-Print Secure Gateway</p>
+                    <h3>Checkout Invoice</h3>
                     <div class="invoice-box">
-                        <div class="row"><span style="margin-right: 10px;">File Name:</span><b style="color:#0f172a; word-break: break-all; text-align: right;">${originalFileName}</b></div>
-                        <div class="row"><span>Format:</span><b style="color:#0f172a;">${displayType}</b></div>
-                        <div class="row"><span>Total Pages:</span><b style="color:#0f172a;">${totalPages}</b></div>
+                        <div class="row"><span>File Name:</span><b style="word-break: break-all;">${originalFileName}</b></div>
+                        <div class="row"><span>Format:</span><b>${displayType}</b></div>
+                        <div class="row"><span>Total Pages:</span><b>${totalPages}</b></div>
                         <div style="border-top: 1px dashed #cbd5e1; margin: 12px 0;"></div>
                         <div class="row" style="font-size:16px; font-weight: 800;"><span>Grand Total:</span><span style="color:#7c3aed;">₹${totalCost}</span></div>
                     </div>
-                    <button id="rzp-button" class="pay-btn">Pay via UPI / Card 💳</button>
-                    <br>
-                    <a href="/print?id=${printerId}" style="color: #ef4444; font-size: 13px; text-decoration: none; font-weight: 600;">Cancel Order</a>
+                    <button id="rzp-button" class="pay-btn">Proceed to Razorpay Secure Payment 💳</button>
                 </div>
                 <script>
                     var options = {
@@ -221,20 +213,10 @@ app.post('/upload', upload.single('document'), async (req, res) => {
                         "currency": "INR", 
                         "name": "Smart Pay-Per-Print Hub",
                         "description": "Real-Time Print Automation Node",
-                        "handler": function (response){
-                            var form = document.createElement('form'); 
-                            form.method = 'POST'; 
-                            form.action = '/trigger-print';
-                            var inputs = { 'fileName': '${req.file.filename}', 'printerId': '${printerId}', 'format': '${fileType}', 'cost': '${totalCost}' };
-                            for (var key in inputs) {
-                                var input = document.createElement('input'); input.type = 'hidden'; input.name = key; input.value = inputs[key]; form.appendChild(input);
-                            }
-                            document.body.appendChild(form); 
-                            form.submit();
-                        },
+                        "callback_url": "${req.protocol}://${req.get('host')}/trigger-print-redirect?fileName=${req.file.filename}&printerId=${printerId}&format=${fileType}&cost=${totalCost}",
+                        "redirect": true, // यह ब्राउज़र को सीधे रेज़रपे के पेज पर रीडायरेक्ट कर देगा
                         "theme": { "color": "#7c3aed" }
                     };
-                    
                     var rzp1 = new window.Razorpay(options);
                     document.getElementById('rzp-button').onclick = function(e){ 
                         rzp1.open(); 
@@ -250,28 +232,39 @@ app.post('/upload', upload.single('document'), async (req, res) => {
     }
 });
 
-app.use(express.urlencoded({ extended: true }));
-app.post('/trigger-print', async (req, res) => {
-    const { fileName, printerId, format, cost } = req.body;
+// रीडायरेक्ट के बाद पेमेंट सक्सेस को हैंडल करने का राउट
+app.post('/trigger-print-redirect', express.urlencoded({ extended: true }), async (req, res) => {
+    const { razorpay_payment_id } = req.body;
+    const { fileName, printerId, format, cost } = req.query;
     const filePath = path.join(__dirname, 'uploads', fileName);
     const activePrinter = printers[printerId] || printers["PRINTER_01"];
+    
     try {
+        // दुकानदार के डैशबोर्ड पर सिग्नल भेजना
         io.emit('new-print-job', { printerName: activePrinter.name, format: format.includes('pdf') ? 'PDF' : 'IMAGE', cost: cost });
+        
         const isRenderCloud = process.env.RENDER === 'true';
         if (!isRenderCloud) { await ptp.print(filePath); }
         if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+        
         res.send(`
             <html>
             <head>
                 <style>
                     body { font-family: sans-serif; background-color: #030712; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
-                    .card { background: #ffffff; padding: 40px; border-radius: 24px; text-align: center; border-top: 6px solid #22c55e; box-shadow: 0px 25px 60px rgba(0, 0, 0, 0.5); }
+                    .card { background: #ffffff; padding: 40px; border-radius: 24px; text-align: center; border-top: 6px solid #22c55e; max-width: 400px; width: 100%; box-shadow: 0px 25px 60px rgba(0, 0, 0, 0.5); }
                 </style>
             </head>
-            <body><div class="card"><h2>Payment Successful! 🎉</h2><p style="color:#64748b;">Request sent to merchant tray.</p></div></body>
+            <body>
+                <div class="card">
+                    <h2>Payment Successful! 🎉</h2>
+                    <p style="color:#64748b;">Transaction ID: ${razorpay_payment_id}</p>
+                    <p style="color:#64748b;">Request successfully routed to merchant spooler tray.</p>
+                </div>
+            </body>
             </html>
         `);
-    } catch (err) { res.status(500).send("Failed."); }
+    } catch (err) { res.status(500).send("Failed to process payment callback."); }
 });
 
 const PORT = process.env.PORT || 3000;
