@@ -164,37 +164,32 @@ app.post('/upload', upload.single('document'), async (req, res) => {
         filePath = path.join(__dirname, 'uploads', req.file.filename);
         
         const originalFileName = req.file.originalname;
-        let totalPages = 1; let totalCost = 0; let fileType = req.file.mimetype; let displayType = "PDF Document";
+        let totalPages = 1; 
+        let totalCost = 0; 
+        let fileType = req.file.mimetype; 
+        let displayType = "PDF Document";
 
         if (fileType === 'application/pdf') {
             const dataBuffer = new Uint8Array(fs.readFileSync(filePath));
             const loadingTask = pdfjsLib.getDocument({ data: dataBuffer });
             const pdf = await loadingTask.promise;
-            totalPages = pdf.numPages; totalCost = totalPages * activePrinter.pdfPrice;
+            totalPages = pdf.numPages; 
+            totalCost = totalPages * activePrinter.pdfPrice;
         } else if (fileType.startsWith('image/')) {
-            displayType = "Image/Photo"; totalCost = activePrinter.photoPrice;
+            displayType = "Image/Photo"; 
+            totalCost = activePrinter.photoPrice;
             const processedPhotoPath = filePath + '_converted.png';
             await sharp(filePath).resize(2480, 3508, { fit: 'inside' }).toFile(processedPhotoPath);
-            fs.unlinkSync(filePath); filePath = processedPhotoPath;
+            fs.unlinkSync(filePath); 
+            filePath = processedPhotoPath;
         }
         
-        const amountInPaise = totalCost * 100;
-
-        // 🌟 लाइव मोड के लिए रेज़रपे सर्वर पर असली ऑर्डर क्रिएट करना
-        const orderOptions = {
-            amount: amountInPaise,
-            currency: "INR",
-            receipt: `receipt_${Date.now()}`
-        };
-        
-        const rzpOrder = await razorpayInstance.orders.create(orderOptions);
-
+        // 🌟 100% फुल-प्रूफ रीडायरेक्ट मोड (यह कभी ब्लॉक नहीं हो सकता)
         res.send(`
             <html>
             <head>
                 <meta name="viewport" content="width=device-width, initial-scale=1.0">
                 <title>Secure Checkout | Smart Pay-Per-Print Hub</title>
-                <script src="https://razorpay.com"></script>
                 <style>
                     body { 
                         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
@@ -205,7 +200,7 @@ app.post('/upload', upload.single('document'), async (req, res) => {
                     .card { background: #ffffff; max-width: 400px; width: 100%; padding: 35px; border-radius: 24px; box-shadow: 0px 25px 60px rgba(0, 0, 0, 0.5); text-align: center; }
                     .invoice-box { background: #f8fafc; border: 1px solid #f1f5f9; padding: 18px; border-radius: 16px; text-align: left; font-size: 13px; margin: 25px 0; color: #334155; }
                     .row { display: flex; justify-content: space-between; margin: 8px 0; font-weight: 500; }
-                    .pay-btn { width: 100%; background: linear-gradient(135deg, #7c3aed, #4f46e5); color: #ffffff; border: none; padding: 15px; font-size: 14px; font-weight: 700; border-radius: 14px; cursor: pointer; text-transform: uppercase; }
+                    .pay-btn { width: 100%; background: linear-gradient(135deg, #7c3aed, #4f46e5); color: #ffffff; border: none; padding: 15px; font-size: 14px; font-weight: 700; border-radius: 14px; cursor: pointer; text-transform: uppercase; text-decoration: none; display: inline-block; box-shadow: 0 6px 20px rgba(124, 58, 237, 0.3); }
                 </style>
             </head>
             <body>
@@ -214,39 +209,50 @@ app.post('/upload', upload.single('document'), async (req, res) => {
                     <div class="invoice-box">
                         <div class="row"><span>File Name:</span><b style="word-break: break-all;">${originalFileName}</b></div>
                         <div class="row"><span>Format:</span><b>${displayType}</b></div>
-                        <div class="row"><span>Pages:</span><b>${totalPages}</b></div>
+                        <div class="row"><span>Total Pages:</span><b>${totalPages}</b></div>
                         <div style="border-top: 1px dashed #cbd5e1; margin: 12px 0;"></div>
-                        <div class="row" style="font-size:16px; font-weight: 800;"><span>Total:</span><span style="color:#7c3aed;">₹${totalCost}</span></div>
+                        <div class="row" style="font-size:16px; font-weight: 800;"><span>Grand Total:</span><span style="color:#7c3aed;">₹${totalCost}</span></div>
                     </div>
-                    <button id="rzp-button" class="pay-btn">Pay via UPI / Card 💳</button>
+                    <!-- 🌟 यह सीधे फॉर्म सबमिट करके /pay-redirect राउट पर ले जाएगा -->
+                    <form action="/pay-redirect" method="POST">
+                        <input type="hidden" name="fileName" value="${req.file.filename}">
+                        <input type="hidden" name="printerId" value="${printerId}">
+                        <input type="hidden" name="format" value="${fileType}">
+                        <input type="hidden" name="cost" value="${totalCost}">
+                        <button type="submit" class="pay-btn" style="padding: 15px 0;">Open Razorpay Secure Portal 💳</button>
+                    </form>
+                    <br>
+                    <a href="/print?id=${printerId}" style="color: #ef4444; font-size: 13px; text-decoration: none; font-weight: 600;">Cancel Order</a>
                 </div>
-                <script>
-                    var options = {
-                        "key": "${RAZORPAY_KEY_ID}",
-                        "amount": "${rzpOrder.amount}",
-                        "currency": "INR",
-                        "name": "Smart Pay-Per-Print Hub",
-                        "description": "Real-Time Cloud Print Node",
-                        "order_id": "${rzpOrder.id}", // 🌟 असली ऑर्डर आईडी फ्रंटएंड पर पास करना
-                        "handler": function (response){
-                            var form = document.createElement('form'); form.method = 'POST'; form.action = '/trigger-print';
-                            var inputs = { 'fileName': '${req.file.filename}', 'printerId': '${printerId}', 'format': '${fileType}', 'cost': '${totalCost}' };
-                            for (var key in inputs) {
-                                var input = document.createElement('input'); input.type = 'hidden'; input.name = key; input.value = inputs[key]; form.appendChild(input);
-                            }
-                            document.body.appendChild(form); form.submit();
-                        },
-                        "theme": { "color": "#7c3aed" }
-                    };
-                    var rzp1 = new window.Razorpay(options);
-                    document.getElementById('rzp-button').onclick = function(e){ rzp1.open(); e.preventDefault(); }
-                </script>
             </body>
             </html>
         `);
     } catch (err) {
         if (filePath && fs.existsSync(filePath)) fs.unlinkSync(filePath);
-        res.status(500).send("Error compiling invoice or creating order.");
+        res.status(500).send("Error compiling invoice.");
+    }
+});
+
+// 🌟 यह बैकएंड पर ऑर्डर बनाकर यूजर को रेज़रपे के खुद के सिक्योर होस्टेड पेज पर फेंक देगा
+app.post('/pay-redirect', async (req, res) => {
+    const { fileName, printerId, format, cost } = req.body;
+    const amountInPaise = parseFloat(cost) * 100;
+    
+    try {
+        const orderOptions = {
+            amount: amountInPaise,
+            currency: "INR",
+            receipt: `rcpt_${Date.now()}`
+        };
+        
+        // रेज़रपे सर्वर पर ऑर्डर आईडी जनरेट करना
+        const rzpOrder = await razorpayInstance.orders.create(orderOptions);
+        
+        // सीधे रेज़रपे होस्टेड गेटवे यूआरएल पर रीडायरेक्ट करना
+        res.redirect(`https://razorpay.com{rzpOrder.id}`);
+    } catch (error) {
+        // अगर लाइव की में कोई एरर है, तो यह यूजर को साफ-साफ स्क्रीन पर दिखा देगा
+        res.status(500).send("Razorpay Configuration Error: Please check if your Live Account is Active.");
     }
 });
 
@@ -262,17 +268,11 @@ app.post('/trigger-print', async (req, res) => {
         if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
         res.send(`
             <html>
-            <head>
-                <style>
-                    body { font-family: sans-serif; background-color: #030712; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
-                    .card { background: #ffffff; padding: 40px; border-radius: 24px; text-align: center; border-top: 6px solid #22c55e; }
-                </style>
-            </head>
-            <body><div class="card"><h2>Payment Successful! 🎉</h2><p style="color:#64748b;">Request routed to merchant live queue tray.</p></div></body>
+            <body><h2>Payment Successful! 🎉</h2></body>
             </html>
         `);
     } catch (err) { res.status(500).send("Failed."); }
 });
 
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, '0.0.0.0', () => { console.log('🚀 Live Production Server active on port ' + PORT); });
+server.listen(PORT, '0.0.0.0', () => { console.log('🚀 Live Server active on port ' + PORT); });
