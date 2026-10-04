@@ -18,7 +18,7 @@ if (!fs.existsSync(path.join(__dirname, 'uploads'))){
 }
 
 // ⚠️ रेज़रपे से अप्रूवल मिलने के बाद यहाँ अपनी 'rzp_live_...' चाबी डालना
-const RAZORPAY_KEY_ID = "rzp_live_YOUR_LIVE_KEY_ID_HERE"; 
+const RAZORPAY_KEY_ID = "rzp_live_TjkxhC57dqHugH"; 
 
 const printers = {
     "PRINTER_01": { name: "Central Library LaserJet", location: "Block A, 1st Floor", pdfPrice: 5, photoPrice: 10 },
@@ -175,11 +175,13 @@ app.post('/upload', upload.single('document'), async (req, res) => {
         }
         const amountInPaise = totalCost * 100;
         
+        // असली रेज़रपे पेमेंट गेटवे स्क्रीन (Premium Cosmic Neon Theme)
         res.send(`
             <html>
             <head>
                 <meta name="viewport" content="width=device-width, initial-scale=1.0">
                 <title>Secure Checkout | Smart Pay-Per-Print Hub</title>
+                <script src="https://razorpay.com"></script>
                 <style>
                     body { 
                         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
@@ -208,20 +210,32 @@ app.post('/upload', upload.single('document'), async (req, res) => {
                         <div style="border-top: 1px dashed #cbd5e1; margin: 12px 0;"></div>
                         <div class="row" style="font-size:16px; font-weight: 800;"><span>Grand Total:</span><span style="color:#7c3aed;">₹${totalCost}</span></div>
                     </div>
-                    <button id="test-pay-btn" class="pay-btn">Simulate Test Payment 💳</button>
+                    <button id="rzp-button" class="pay-btn">Pay via UPI / Card 💳</button>
                     <br><br>
                     <a href="/print?id=${printerId}" style="color: #ef4444; font-size: 13px; text-decoration: none; font-weight: 600;">Cancel Order</a>
                 </div>
                 <script>
-                    document.getElementById('test-pay-btn').onclick = function(e){
-                        e.preventDefault();
-                        var form = document.createElement('form'); form.method = 'POST'; form.action = '/trigger-print';
-                        var inputs = { 'fileName': '${req.file.filename}', 'printerId': '${printerId}', 'format': '${fileType}', 'cost': '${totalCost}' };
-                        for (var key in inputs) {
-                            var input = document.createElement('input'); input.type = 'hidden'; input.name = key; input.value = inputs[key]; form.appendChild(input);
-                        }
-                        document.body.appendChild(form); form.submit();
-                    }
+                    var options = {
+                        "key": "${RAZORPAY_KEY_ID}", 
+                        "amount": "${amountInPaise}", 
+                        "currency": "INR", 
+                        "name": "Smart Pay-Per-Print Hub",
+                        "description": "Real-Time Print Automation Node",
+                        "handler": function (response){
+                            var form = document.createElement('form'); 
+                            form.method = 'POST'; 
+                            form.action = '/trigger-print';
+                            var inputs = { 'fileName': '${req.file.filename}', 'printerId': '${printerId}', 'format': '${fileType}', 'cost': '${totalCost}' };
+                            for (var key in inputs) {
+                                var input = document.createElement('input'); input.type = 'hidden'; input.name = key; input.value = inputs[key]; form.appendChild(input);
+                            }
+                            document.body.appendChild(form); 
+                            form.submit();
+                        },
+                        "theme": { "color": "#7c3aed" }
+                    };
+                    var rzp1 = new window.Razorpay(options);
+                    document.getElementById('rzp-button').onclick = function(e){ rzp1.open(); e.preventDefault(); }
                 </script>
             </body>
             </html>
@@ -241,7 +255,7 @@ app.post('/trigger-print', async (req, res) => {
     try {
         io.emit('new-print-job', { printerName: activePrinter.name, format: format.includes('pdf') ? 'PDF' : 'IMAGE', cost: cost });
         
-        // रेंडर क्लाउड पर होने पर प्रिंटर ड्राइवर को स्किप करें ताकि सर्वर क्रैश न हो
+        // रेंडर क्लाउड पर होने पर लोकल ड्राइवर स्किप होगा ताकि क्रैश न हो
         const isRenderCloud = process.env.RENDER === 'true';
         if (!isRenderCloud) {
             await ptp.print(filePath);
@@ -265,8 +279,8 @@ app.post('/trigger-print', async (req, res) => {
             </head>
             <body>
                 <div class="card">
-                    <h2>Printing Started!</h2>
-                    <p style="color:#64748b;">Your transaction has been securely settled. Request routed to spooler tray successfully.</p>
+                    <h2>Payment Successful! 🎉</h2>
+                    <p style="color:#64748b;">Your transaction has been securely settled. Request routed to the spooler tray successfully.</p>
                 </div>
             </body>
             </html>
@@ -274,6 +288,5 @@ app.post('/trigger-print', async (req, res) => {
     } catch (err) { res.status(500).send("Printing failed."); }
 });
 
-// डायनामिक पोर्ट सेट करना (लोकल पर 3000 और रेंडर पर ऑटो-पोर्ट उठाएगा)
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, '0.0.0.0', () => { console.log('🚀 Server active on port ' + PORT); });
